@@ -8,6 +8,7 @@ static buffer_t buffer_create(unsigned long capacity)
 	buffer_t b = calloc(size,1);
 	if(b)
 	{
+		printf("buffer create\n");
 		b->ref_count = 0;
 		b->size = 0;
 		b->capacity = capacity;

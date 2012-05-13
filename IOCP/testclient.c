@@ -103,35 +103,50 @@ void on_connect_callback(SOCKET s,const char *ip,unsigned long port,void *ud)
 #include "rpacket.h"
 #include "wpacket.h"
 
-struct test_packet
-{
-	unsigned long  len;
-	unsigned long  strlen;
-	char     msg[20];
-	unsigned long  val;
-};
 
+
+void test1()
+{
+	wpacket_t w = wpacket_create(12);
+	rpacket_t r,r1;
+	wpacket_t w1 = 0;
+	const char *str;
+	wpacket_write_string(w,"hello kenny");
+	r = rpacket_create_by_wpacket(w);
+	wpacket_destroy(&w);
+	str = rpacket_read_string(r);
+	printf("str=%s\n",str);
+	w1 = wpacket_create_by_rpacket(r);
+	r1 = rpacket_create_by_wpacket(w1);
+	str = rpacket_read_string(r1);
+	printf("str=%s\n",str);
+	rpacket_destroy(&r);
+	rpacket_destroy(&r1);
+	wpacket_destroy(&w1);
+}
+
+void test2()
+{
+	wpacket_t w = wpacket_create(12);
+	rpacket_t r;
+	write_pos wp;
+	wpacket_write_long(w,1);
+	wp = wpacket_get_writepos(w);
+	wpacket_write_short(w,2);
+	wpacket_write_string(w,"hello kenny");
+	wpacket_rewrite_short(&wp,4);
+    r = rpacket_create_by_wpacket(w);
+	printf("%u\n",rpacket_read_long(r));
+	printf("%u\n",rpacket_read_short(r));
+	printf("%s\n",rpacket_read_string(r));
+	rpacket_destroy(&r);
+	wpacket_destroy(&w);
+}
 
 int main()
 {	
-	wpacket_t w = wpacket_create(12);
-	rpacket_t r;
-	unsigned long p;
-	write_pos wpos;
-	wpacket_write_long(w,1);
-	wpacket_write_short(w,2);
-	wpacket_write_long(w,3);
-	wpos = wpacket_get_writepos(w);
-	wpacket_write_long(w,4);
-	wpacket_rewrite_long(&wpos,5);
-	r = rpacket_create_by_wpacket(w);
-	wpacket_destroy(&w);
-	p = rpacket_read_long(r);
-	p = rpacket_read_short(r);
-	p = rpacket_read_long(r);
-	p = rpacket_read_long(r);
-	rpacket_destroy(&r);
-
+	test1();
+	test2();
 /*
 	struct test_packet tp;
 	rpacket_t rpk;

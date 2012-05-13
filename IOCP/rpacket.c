@@ -13,6 +13,7 @@ rpacket_t rpacket_create(buffer_t b,unsigned long pos/*数据在b中的起始下标*/)
 	r->len = *(unsigned long*)(&(b->buf[pos]));
 	r->data_remain = r->len;
 	r->rpos = pos + sizeof(r->len);
+	r->begin_pos = pos;
 	return r;
 }
 
@@ -23,9 +24,11 @@ rpacket_t rpacket_create_by_wpacket(struct wpacket *w)
 	r->binbufpos = 0;
 	r->buf = buffer_acquire(0,w->buf);
 	r->readbuf = buffer_acquire(0,w->buf);
-	r->len = *(unsigned long*)(&(w->buf->buf[0]));
+	//这里的len只记录构造时wpacket的len,之后wpacket的写入不会影响到rpacket的len
+	r->len = *(unsigned long*)(&(w->buf->buf[w->begin_pos]));
 	r->data_remain = r->len;
 	r->rpos = 0 + sizeof(r->len);
+	r->begin_pos = w->begin_pos;
 	return r;
 }
 

@@ -26,6 +26,7 @@ typedef struct rpacket
 	unsigned long rpos;    //读下标
 	unsigned long data_remain;
 	unsigned long binbufpos;
+	unsigned long begin_pos;
 	buffer_t binbuf;       //用于存放跨越buffer_t边界数据的buffer_t
 	buffer_t buf;          //存放此数据包内容的buffer_t链表
 	buffer_t readbuf;      //当前rpos所在的buffer_t
@@ -34,7 +35,7 @@ typedef struct rpacket
 struct wpacket;
 
 rpacket_t rpacket_create(buffer_t,unsigned long pos);
-rpacket_t rpacket_create_by_wpacket(struct wpacket*);
+rpacket_t rpacket_create_by_wpacket(struct wpacket*);//通过wpacket构造
 void      rpacket_destroy(rpacket_t*);
 
 //数据读取接口

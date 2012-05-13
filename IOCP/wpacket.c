@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "rpacket.h"
 
 static int is_pow_of_2(unsigned long size)
 {
@@ -37,6 +38,19 @@ wpacket_t wpacket_create(unsigned long size)
 	w->len = (unsigned long*)w->buf->buf;
 	*(w->len) = 0;
 	w->buf->size = sizeof(w->len);
+	w->begin_pos = 0;
+	return w;
+}
+
+wpacket_t wpacket_create_by_rpacket(struct rpacket *r)
+{
+	wpacket_t w = calloc(sizeof(*w),1);
+	w->factor = 0;
+	w->writebuf = 0;
+	w->begin_pos = r->begin_pos;
+	w->buf = buffer_acquire(0,r->buf);
+	w->len = (unsigned long*)(r->buf->buf + r->begin_pos);
+	w->wpos = 0;
 	return w;
 }
 
@@ -64,10 +78,43 @@ static void wpacket_expand(wpacket_t w)
 	w->wpos = 0;
 }
 
+
+static void wpacket_copy(wpacket_t w,buffer_t buf)
+{
+	char *ptr = buf->buf;
+	buffer_t tmp_buf = w->buf;
+	unsigned long copy_size;
+	while(tmp_buf)
+	{
+		copy_size = tmp_buf->size - w->wpos;
+		memcpy(ptr,tmp_buf->buf,copy_size);
+		ptr += copy_size;
+		w->wpos = 0;
+		tmp_buf = tmp_buf->next;
+	}
+}
+
 static void wpacket_write(wpacket_t w,char *addr,unsigned long size)
 {
 	char *ptr = addr;
 	unsigned long copy_size;
+	buffer_t tmp;
+	unsigned char k;
+	if(!w->writebuf)
+	{
+		/*wpacket是由rpacket构造的，这里执行写时拷贝，
+		* 执行完后wpacket和构造时传入的rpacket不再共享buffer
+		*/
+		k = GetK(*w->len);
+		w->factor = k;
+		tmp = buffer_create_and_acquire(0,1 << k);
+		wpacket_copy(w,tmp);
+		w->begin_pos = 0;
+		w->len = (unsigned long*)tmp->buf;
+		w->wpos = sizeof(*w->len);
+		w->buf = buffer_acquire(w->buf,tmp);
+		w->writebuf = buffer_acquire(w->writebuf,w->buf);
+	}
 	while(size)
 	{
 		copy_size = w->buf->capacity - w->wpos;
@@ -152,11 +199,13 @@ void wpacket_rewrite_double(write_pos *wp,double value)
 
 void wpacket_write_string(wpacket_t w ,const char *value)
 {
-
+	wpacket_write_binary(w,value,strlen(value)+1);
 }
 
 void wpacket_write_binary(wpacket_t w,const void *value,unsigned long size)
 {
-
+	assert(value);
+	wpacket_write_long(w,size);
+	wpacket_write(w,(char*)value,size);
 }
 
