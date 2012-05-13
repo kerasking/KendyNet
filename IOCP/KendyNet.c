@@ -174,7 +174,7 @@ int    Bind2Engine(HANDLE CompletePort,Socket_t socket)
 	if (NULL == hTemp)
 		return -1;
 	socket->complete_port = CompletePort;
-	//SetFileCompletionNotificationModes((HANDLE)socket->sock,FILE_SKIP_COMPLETION_PORT_ON_SUCCESS);
+	SetFileCompletionNotificationModes((HANDLE)socket->sock,FILE_SKIP_COMPLETION_PORT_ON_SUCCESS);
 	return 0;
 }
 
