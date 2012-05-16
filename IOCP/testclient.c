@@ -7,83 +7,58 @@
 #include <Winerror.h>
 #include "KendyNet.h"
 #include "Connector.h"
-//HANDLE iocp;
-struct connection
-{
-	struct Socket socket;
-	WSABUF wsendbuf;
-	WSABUF wrecvbuf;
-	char   sendbuf[4096];
-	char   recvbuf[4096];
-	struct OverLapContext send_overlap;
-	struct OverLapContext recv_overlap;
-};
-
-
-void SendFinish(struct Socket *s,struct OverLapContext *overLap,long bytestransfer,DWORD err_code)
-{
-	struct connection *c = (struct connection*)s;
-	if(bytestransfer == 0)
-	{
-		printf("连接断开1:%d\n",c->socket.sock);
-		closesocket(c->socket.sock);
-		free(c);
-	}
-	else if(bytestransfer < 0)
-	{
-		//根据err_code判断
-	}
-	else
-	{
-		while(bytestransfer > 0)
-		{
-			err_code = 0;
-			overLap->wbuf->len = 64;
-			overLap->wbuf->buf = c->recvbuf;
-			bytestransfer = WSA_Send((Socket_t)c,&c->recv_overlap,1,&err_code);
-		}
-		if(bytestransfer == 0 || err_code != WSA_IO_PENDING)
-		{
-			printf("连接断开2:%d\n",c->socket.sock);
-			closesocket(c->socket.sock);
-			free(c);
-		}
-	}
-}
-
-void RecvFinish(struct Socket *s,struct OverLapContext *overLap,long bytestransfer,DWORD err_code)
-{
-
-}
-
-struct connection* CreateConnection(SOCKET s)
-{
-	struct connection *c;
-	c = malloc(sizeof(*c));
-	ZeroMemory(c, sizeof(*c));
-	c->socket.sock = s;
-	c->socket.RecvFinish = &RecvFinish;
-	c->socket.SendFinish = &SendFinish;
-	c->wrecvbuf.buf = c->recvbuf;
-	c->wrecvbuf.len = 64;
-	c->recv_overlap.buf_count = 1;
-	c->recv_overlap.wbuf = &c->wrecvbuf;
-
-	c->wsendbuf.buf = c->sendbuf;
-	c->wsendbuf.len = 64;
-	c->send_overlap.buf_count = 1;
-	c->send_overlap.wbuf = &c->wsendbuf;
-	return c;
-}
+#include "Connection.h"
 
 static int connect_count = 0;
+DWORD packet_recv = 0;
+DWORD packet_send = 0;
+DWORD send_request = 0;
+DWORD tick = 0;
+DWORD now = 0;
+unsigned long bf_count = 0;
+#define MAX_CLIENT 200
+static struct connection *clients[MAX_CLIENT];
+
+void init_clients()
+{
+	int i = 0;
+	for(; i < MAX_CLIENT;++i)
+		clients[i] = 0;
+}
+
+void add_client(struct connection *c)
+{
+	int i = 0;
+	for(; i < MAX_CLIENT; ++i)
+	{
+		if(clients[i] == 0)
+			clients[i] = c;
+	}
+}
+
+void on_process_packet(struct connection *c,rpacket_t r)
+{
+	now = GetTickCount();
+	++packet_recv;
+	if(now - tick > 1000)
+	{
+		printf("packet_recv:%u,packet_send:%u,send_request:%u,interval:%u,bf_count:%u\n",packet_recv,packet_send,send_request,now - tick,bf_count);
+		tick = now;
+		packet_recv = 0;
+		packet_send = 0;
+		send_request = 0;
+	}
+	rpacket_destroy(&r);
+}
 
 void on_connect_callback(SOCKET s,const char *ip,unsigned long port,void *ud)
 {
 	DWORD err_code = 0;
 	HANDLE *iocp = (HANDLE*)ud;
 	unsigned long ul = 1;
+	BOOL                         optval=1;
 	struct connection *c;
+	wpacket_t wpk;
 	++connect_count;
 	if(s == INVALID_SOCKET)
 	{
@@ -93,23 +68,25 @@ void on_connect_callback(SOCKET s,const char *ip,unsigned long port,void *ud)
 	{
 		printf("%d,连接到:%s,%d,成功\n",s,ip,port);
 		ioctlsocket(s,FIONBIO,(unsigned long*)&ul);
-		c = CreateConnection(s);
+		setsockopt(s,IPPROTO_TCP,TCP_NODELAY,(char*)&optval,sizeof(optval));         //不采用延时算法 
+
+		c = connection_create(s,on_process_packet);
+		add_client(c);
 		Bind2Engine(*iocp,(Socket_t)c);
-		WSA_Send((Socket_t)c,&c->send_overlap,0,&err_code);
+		wpk = wpacket_create(64);
+		wpacket_write_long(wpk,(unsigned long)s);
+		wpacket_write_string(wpk,"hello kenny");
+		connection_send(c,wpk,0);
+		connection_recv(c);
 	}
 }
-
-#include "buffer.h"
-#include "rpacket.h"
-#include "wpacket.h"
-
-
 
 void test1()
 {
 	wpacket_t w = wpacket_create(12);
 	rpacket_t r,r1;
 	wpacket_t w1 = 0;
+	wpacket_t w2;
 	const char *str;
 	wpacket_write_string(w,"hello kenny");
 	r = rpacket_create_by_wpacket(w);
@@ -117,12 +94,14 @@ void test1()
 	str = rpacket_read_string(r);
 	printf("str=%s\n",str);
 	w1 = wpacket_create_by_rpacket(r);
+	w2 = wpacket_create_by_rpacket(r);
 	r1 = rpacket_create_by_wpacket(w1);
 	str = rpacket_read_string(r1);
 	printf("str=%s\n",str);
 	rpacket_destroy(&r);
 	rpacket_destroy(&r1);
 	wpacket_destroy(&w1);
+	wpacket_destroy(&w2);
 }
 
 void test2()
@@ -143,113 +122,47 @@ void test2()
 	wpacket_destroy(&w);
 }
 
-int main()
-{	
-	test1();
-	test2();
-/*
-	struct test_packet tp;
-	rpacket_t rpk;
-	buffer_t b1;
-	char *ptr;
-	unsigned long p1;
-	tp.len = 28;
-	tp.strlen = 20;
-	tp.val = 100;
-	strcpy(tp.msg,"1234567890123456789");
-	ptr = (char*)&tp;
-	printf("%d\n",sizeof(tp));
-
-	b1 = buffer_create_and_acquire(0,16);
-	b1->next = buffer_create_and_acquire(0,16);
-	memcpy(b1->buf,ptr,16);
-	b1->size = 16;
-	memcpy(b1->next->buf,ptr+16,16);
-	b1->next->size = 16;
-
-	rpk = rpacket_create(b1,0);
-	ptr = rpacket_read_string(rpk);
-	p1 = rpacket_read_long(rpk);
-
-	rpacket_destroy(&rpk);
-	buffer_release(&b1);
-	*/
-	getchar();
-	/*
-	buffer_t cur = 0;
-	buffer_t b1 = buffer_create_and_acquire(0,16);
-	buffer_t b2 = buffer_acquire(0,b1);
-	buffer_release(&b1);
-	buffer_release(&b2);
-
-	b1 = buffer_create_and_acquire(0,16); //b1指向bufferA
-	b1 = buffer_create_and_acquire(b1,16);//b1指向bufferB,bufferA计数减为0,被释放
-	buffer_release(&b1);
-
-	//创建3个buffer形成链表
-	b1 = buffer_create_and_acquire(0,16);
-	b1->next = buffer_create_and_acquire(0,16);
-	b1->next->next = buffer_create_and_acquire(0,16);
-
-	cur =b1;
-	while(cur)
-	{
-		cur = buffer_acquire(cur,cur->next);
-	}
-	//遍历结束,所有buffer的计数减为0,全部被释放
-	*/
-/*	HANDLE iocp;
+void testNet()
+{
+	HANDLE iocp;
 	connector_t c = NULL;
 	int ret;
 	int i = 0;
+	wpacket_t wpk;
+	getchar();
 	InitNetSystem();
+	init_clients();
 	iocp = CreateNetEngine(1);
 	c =  connector_create();
-	for( ; i < 20;++i)
+	for( ; i < MAX_CLIENT;++i)
 	{
-		ret = connector_connect(c,"192.168.6.13",8010,on_connect_callback,&iocp,1000*20);
+		ret = connector_connect(c,"192.168.6.11",8010,on_connect_callback,&iocp,1000*20);
 		Sleep(1);
 	}
-	while(connect_count < 20)
+	while(connect_count < 1)
 		connector_run(c,0);
 	while(1)
 	{
 		RunEngine(iocp,50);
+		for(i = 0; i < MAX_CLIENT; ++i)
+		{
+			if(clients[i])
+			{
+				wpk = wpacket_create(64);
+				wpacket_write_long(wpk,clients[i]->socket.sock);
+				wpacket_write_string(wpk,"hello kenny");
+				connection_send(clients[i],wpk,0);
+			}
+		}
 	}
-*/
-	return 0;
+
 }
-/*
-#include "common_hash_function.h"
+
 int main()
-{
-	unsigned long ret;// = hash_integer(123455);
-	//ret = (ret * 2654435769) >> (32-4);
-
-	int i = 0;
-	for(; i < 32;++i)
-	{
-		ret = hash_integer(i+1);
-		printf("%d\n",ret = (ret * 2654435769) >> (32-5));
-	}
-	
+{	
+	//test1();
+	//test2();
+	testNet();
 	getchar();
-
-	/*int tmp[32];
-	int i = 0;
-	int j = 0;//0xffffffff;
-	//printf("%x\n",0xffffffff);
-	tmp[0] = 0xffffffff;
-	for( ; i < 31; ++i)
-	{
-		j = (1<<i)+j;
-		tmp[i+1] = j ^ 0xffffffff;
-		//printf("%x\n",j ^ 0xffffffff);
-	}
-	i = 32;
-	for( ; i >= 0; --i)
-		printf("%x\n",tmp[i]);
-		*
 	return 0;
 }
-*/

@@ -3,157 +3,94 @@
 #include <WinBase.h>
 #include <Winerror.h>
 #include "KendyNet.h"
-struct connection
-{
-	struct Socket socket;
-	WSABUF wsendbuf;
-	WSABUF wrecvbuf;
-	char   sendbuf[4096];
-	char   recvbuf[4096];
-	struct OverLapContext send_overlap;
-	struct OverLapContext recv_overlap;
-};
+#include "Connection.h"
 
-DWORD packet_count = 0;
+
+DWORD packet_recv = 0;
+DWORD packet_send = 0;
+DWORD send_request = 0;
 DWORD tick = 0;
 DWORD now = 0;
+unsigned long bf_count = 0;
 int clientcount = 0;
-/*
-void RecvFinish(struct Socket *s,struct OverLapContext *overLap,long bytestransfer)
+
+#define MAX_CLIENT 250
+static struct connection *clients[MAX_CLIENT];
+
+void init_clients()
 {
-	struct connection *c = (struct connection*)s;
+	int i = 0;
+	for(; i < MAX_CLIENT;++i)
+		clients[i] = 0;
+}
+
+void add_client(struct connection *c)
+{
+	int i = 0;
+	for(; i < MAX_CLIENT; ++i)
+	{
+		if(clients[i] == 0)
+			clients[i] = c;
+	}
+}
+
+void send2_all_client(rpacket_t r)
+{
+	int i = 0;
+	wpacket_t w;
+	//const char *str;
+	//unsigned long s;
+	//s = rpacket_read_long(r);
+	//str = rpacket_read_string(r);
+	for(; i < MAX_CLIENT; ++i)
+	{
+		if(clients[i])
+		{
+			++send_request;
+			w = wpacket_create_by_rpacket(r);
+			//w = wpacket_create(64);
+			//wpacket_write_long(w,s);
+			//wpacket_write_string(w,str);
+			connection_send(clients[i],w,1);
+		}
+	}
+}
+
+void on_process_packet(struct connection *c,rpacket_t r)
+{
+	send2_all_client(r);
+	//wpacket_t w = wpacket_create_by_rpacket(r);
+	//connection_send(c,w,1);
+	rpacket_destroy(&r);
 	now = GetTickCount();
+	++packet_recv;
 	if(now - tick > 1000)
 	{
-		printf("%d,%d\n",packet_count,now - tick);
+		printf("packet_recv:%u,packet_send:%u,send_request:%u,interval:%u,bf_count:%u\n",packet_recv,packet_send,send_request,now - tick,bf_count);
 		tick = now;
-		packet_count = 0;
+		packet_recv = 0;
+		packet_send = 0;
+		send_request = 0;
 	}
-	if(bytestransfer < 0)
-	{
-		closesocket(c->socket.sock);
-		free(c);
-	}
-	else
-	{
-		
-		DWORD lastErrno = 0;
-		if(bytestransfer == overLap->wbuf->len)
-		{
-			++packet_count;
-			c->recv_overlap.wbuf->len = 128;
-			c->recv_overlap.wbuf->buf = c->recvbuf;
-			WSA_Recv((Socket_t)c,&c->recv_overlap,1);
-		}
-		else
-		{
-			overLap->wbuf->len -= bytestransfer;
-			overLap->wbuf->buf += bytestransfer;
-			WSA_Recv((Socket_t)c,overLap,1);
-		}
-	}
-
-}
-*/
-void RecvFinish(struct Socket *s,struct OverLapContext *overLap,long bytestransfer,DWORD err_code)
-{
-	struct connection *c = (struct connection*)s;
-	if(bytestransfer == 0)
-	{
-		printf("连接断开1:%d\n",c->socket.sock);
-		closesocket(c->socket.sock);
-		free(c);
-		--clientcount;
-	}
-	else if(bytestransfer < 0)
-	{
-		//根据err_code判断
-	}
-	else
-	{
-		while(bytestransfer > 0)
-		{
-			err_code = 0;
-			overLap->wbuf->len -= bytestransfer;
-			if(overLap->wbuf->len == 0)
-			{
-				++packet_count;
-				overLap->wbuf->len = 64;
-			}
-			overLap->wbuf->buf = c->recvbuf;
-			bytestransfer = WSA_Recv((Socket_t)c,&c->recv_overlap,1,&err_code);
-		}
-		if(bytestransfer == 0 || err_code != WSA_IO_PENDING)
-		{
-			printf("连接断开2:%d\n",c->socket.sock);
-			closesocket(c->socket.sock);
-			free(c);
-			--clientcount;
-		}
-	}
-}
-
-void SendFinish(struct Socket *s,struct OverLapContext *overLap,long bytestransfer,DWORD err_code)
-{
-	struct connection *c = (struct connection*)s;
-	if(bytestransfer < 0)
-	{
-		closesocket(c->socket.sock);
-		free(c);
-	}
-	else
-	{
-		if(overLap->wbuf->len == bytestransfer)
-		{
-			c->recv_overlap.wbuf->len = 4096;
-			c->recv_overlap.wbuf->buf = c->recvbuf;
-			WSA_Recv((Socket_t)c,&c->recv_overlap,1,&err_code);
-		}
-		else
-		{
-			
-			overLap->wbuf->len -= bytestransfer;
-			overLap->wbuf->buf += bytestransfer;
-			WSA_Send(s,&c->send_overlap,1,&err_code);
-		}
-	}
-}
-
-struct connection* CreateConnection(SOCKET s)
-{
-	struct connection *c;
-	c = malloc(sizeof(*c));
-	ZeroMemory(c, sizeof(*c));
-	c->socket.sock = s;
-	c->socket.RecvFinish = &RecvFinish;
-	c->socket.SendFinish = &SendFinish;
-	c->wrecvbuf.buf = c->recvbuf;
-	c->wrecvbuf.len = 64;
-	c->recv_overlap.buf_count = 1;
-	c->recv_overlap.wbuf = &c->wrecvbuf;
-
-	c->wsendbuf.buf = c->sendbuf;
-	c->wsendbuf.len = 0;
-	c->send_overlap.buf_count = 1;
-	c->send_overlap.wbuf = &c->wsendbuf;
-	return c;
+	
 }
 
 void accept_callback(SOCKET s,void *ud)
 {
 	DWORD err_code = 0;
 	HANDLE *iocp = (HANDLE*)ud;
-	struct connection *c = CreateConnection(s);
-	++clientcount;
-	printf("clientcount:%d\n",clientcount);
+	struct connection *c = connection_create(s,on_process_packet);
+	add_client(c);
+	//++clientcount;
+	printf("cli fd:%d\n",s);
 	Bind2Engine(*iocp,(Socket_t)c);
 	//发出第一个读请求
-	WSA_Recv((Socket_t)c,&c->recv_overlap,0,&err_code);
+	connection_recv(c);
 }
 
 DWORD WINAPI Listen(void *arg)
 {
-	acceptor_t a = create_acceptor("192.168.6.13",8010,&accept_callback,arg);
+	acceptor_t a = create_acceptor("192.168.6.11",8010,&accept_callback,arg);
 	while(1)
 		acceptor_run(a,100);
 	return 0;
@@ -163,6 +100,7 @@ int main()
 	DWORD dwThread;
 	HANDLE iocp;
 	//getchar();
+	init_clients();
 	InitNetSystem();
 	iocp = CreateNetEngine(1);
 
@@ -172,13 +110,15 @@ int main()
 	while(1)
 	{
 		RunEngine(iocp,50);
-		now = GetTickCount();
+		/*now = GetTickCount();
 		if(now - tick > 1000 && packet_count)
 		{
 			printf("%d,%d\n",packet_count,now - tick);
 			tick = now;
 			packet_count = 0;
 		}
+		*/
+		
 	}
 	return 0;
 }

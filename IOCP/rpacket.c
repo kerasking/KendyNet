@@ -3,14 +3,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-rpacket_t rpacket_create(buffer_t b,unsigned long pos/*数据在b中的起始下标*/)
+rpacket_t rpacket_create(buffer_t b,unsigned long pos,unsigned long pk_len)
 {
 	rpacket_t r = calloc(sizeof(*r),1);
 	r->binbuf = 0;
 	r->binbufpos = 0;
 	r->buf = buffer_acquire(0,b);
 	r->readbuf = buffer_acquire(0,b);
-	r->len = *(unsigned long*)(&(b->buf[pos]));
+	r->len = pk_len;
 	r->data_remain = r->len;
 	r->rpos = pos + sizeof(r->len);
 	r->begin_pos = pos;
@@ -25,7 +25,7 @@ rpacket_t rpacket_create_by_wpacket(struct wpacket *w)
 	r->buf = buffer_acquire(0,w->buf);
 	r->readbuf = buffer_acquire(0,w->buf);
 	//这里的len只记录构造时wpacket的len,之后wpacket的写入不会影响到rpacket的len
-	r->len = *(unsigned long*)(&(w->buf->buf[w->begin_pos]));
+	r->len = w->data_size - sizeof(r->len);
 	r->data_remain = r->len;
 	r->rpos = 0 + sizeof(r->len);
 	r->begin_pos = w->begin_pos;
@@ -38,11 +38,8 @@ void      rpacket_destroy(rpacket_t *r)
 	buffer_release(&(*r)->buf);
 	buffer_release(&(*r)->readbuf);
 	buffer_release(&(*r)->binbuf);
-}
-
-unsigned long  rpacket_read_cmd(rpacket_t r)
-{
-	return r->cmd;
+	free(*r);
+	*r = 0;
 }
 
 unsigned long  rpacket_len(rpacket_t r)
@@ -120,9 +117,9 @@ const void* rpacket_read_binary(rpacket_t r,unsigned long *len)
 	*len = size;
 	if(r->data_remain < size)
 		return addr;
-	if(r->buf->size - r->rpos >= size)
+	if(r->readbuf->size - r->rpos >= size)
 	{
-		addr = &r->buf[r->rpos];
+		addr = &r->readbuf->buf[r->rpos];
 		r->rpos += size;
 		r->data_remain -= size;
 		if(r->rpos >= r->readbuf->size && r->data_remain)

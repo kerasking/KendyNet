@@ -39,6 +39,7 @@ wpacket_t wpacket_create(unsigned long size)
 	*(w->len) = 0;
 	w->buf->size = sizeof(w->len);
 	w->begin_pos = 0;
+	w->data_size = sizeof(*(w->len));
 	return w;
 }
 
@@ -49,8 +50,9 @@ wpacket_t wpacket_create_by_rpacket(struct rpacket *r)
 	w->writebuf = 0;
 	w->begin_pos = r->begin_pos;
 	w->buf = buffer_acquire(0,r->buf);
-	w->len = (unsigned long*)(r->buf->buf + r->begin_pos);
+	w->len = 0;//触发拷贝之前len没有作用
 	w->wpos = 0;
+	w->data_size = r->len + sizeof(r->len);
 	return w;
 }
 
@@ -130,6 +132,7 @@ static void wpacket_write(wpacket_t w,char *addr,unsigned long size)
 		w->wpos += copy_size;
 		ptr += copy_size;
 		size -= copy_size;
+		w->data_size += copy_size;
 	}
 }
 

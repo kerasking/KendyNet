@@ -21,8 +21,7 @@
 
 typedef struct rpacket
 {
-	unsigned long cmd;
-	unsigned long len;     //包长
+	unsigned long len;     //包长(去除包长度字段)
 	unsigned long rpos;    //读下标
 	unsigned long data_remain;
 	unsigned long binbufpos;
@@ -34,13 +33,12 @@ typedef struct rpacket
 
 struct wpacket;
 
-rpacket_t rpacket_create(buffer_t,unsigned long pos);
+rpacket_t rpacket_create(buffer_t,unsigned long pos,unsigned long pk_len);
 rpacket_t rpacket_create_by_wpacket(struct wpacket*);//通过wpacket构造
 void      rpacket_destroy(rpacket_t*);
 
 //数据读取接口
 unsigned long  rpacket_len(rpacket_t);
-unsigned long  rpacket_read_cmd(rpacket_t);
 unsigned long  rpacket_data_remain(rpacket_t);
 unsigned char  rpacket_read_char(rpacket_t);
 unsigned short rpacket_read_short(rpacket_t);

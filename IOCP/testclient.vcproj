@@ -57,7 +57,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="iocp.lib ws2_32.lib"
+				AdditionalDependencies="iocp.lib ws2_32.lib testlib.lib"
 				AdditionalLibraryDirectories="D:\google_work\c\IOCP\Debug"
 				GenerateDebugInformation="true"
 				TargetMachine="1"

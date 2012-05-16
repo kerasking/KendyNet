@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "buffer.h"
+
+extern unsigned long bf_count;
 
 static buffer_t buffer_create(unsigned long capacity)
 {
@@ -8,21 +11,23 @@ static buffer_t buffer_create(unsigned long capacity)
 	buffer_t b = calloc(size,1);
 	if(b)
 	{
-		printf("buffer create\n");
+		//printf("buffer create\n");
 		b->ref_count = 0;
 		b->size = 0;
 		b->capacity = capacity;
+		++bf_count;
 	}
 	return b;
 }
 
 static void     buffer_destroy(buffer_t *b)
 {
-	printf("buffer destroy\n");
+	//printf("buffer destroy\n");
 	if((*b)->next)
 		buffer_release(&(*b)->next);
 	free(*b);
 	*b = 0;
+	--bf_count;
 }
 
 buffer_t buffer_create_and_acquire(buffer_t b,unsigned long capacity)
@@ -51,4 +56,23 @@ void buffer_release(buffer_t *b)
 			buffer_destroy(b);
 		*b = 0;
 	}
+}
+
+int buffer_read(buffer_t b,unsigned long pos,char *out,unsigned long size)
+{
+	unsigned long copy_size;
+	while(size)
+	{
+		if(!b)
+			return -1;
+		copy_size = b->size - pos;
+		copy_size = copy_size > size ? size : copy_size;
+		memcpy(out,b->buf + pos,copy_size);
+		size -= copy_size;
+		pos += copy_size;
+		out += copy_size;
+		if(pos >= b->size)
+			b = b->next;
+	}
+	return 0;
 }

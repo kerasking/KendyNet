@@ -17,14 +17,17 @@
 #ifndef _WPACKET_H
 #define _WPACKET_H
 #include "buffer.h"
+#include "link_list.h"
 typedef struct wpacket
 {
-	unsigned long *len;
-	buffer_t buf;
-	buffer_t writebuf;
+	list_node next;
+	unsigned long *len;      //包长字段(去除包长度字段以外实际数据的长度)在buf中的地址
+	buffer_t buf;            //所有数据组成的buf链
+	buffer_t writebuf;       //wpos所在的buf
 	unsigned long wpos;
 	unsigned char factor;
-	unsigned long begin_pos;
+	unsigned long begin_pos; //属于本包的数据在首buf中的起始位置
+	unsigned long data_size;//实际数据大小,包含包长度
 }*wpacket_t;
 struct rpacket;
 
@@ -40,7 +43,6 @@ wpacket_t wpacket_create_by_rpacket(struct rpacket*);//通过rpacket构造
 void wpacket_destroy(wpacket_t*);
 
 write_pos wpacket_get_writepos(wpacket_t);
-
 void wpacket_write_char(wpacket_t,unsigned char);
 void wpacket_write_short(wpacket_t,unsigned short);
 void wpacket_write_long(wpacket_t,unsigned long);

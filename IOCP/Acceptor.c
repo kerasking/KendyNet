@@ -16,7 +16,7 @@ acceptor_t create_acceptor(const char *ip,unsigned long port,on_accept accept_ca
 {
 	SOCKET ListenSocket;
 	struct sockaddr_in    addr;
-	int                         optval=1;                        //Socket属性值
+	BOOL                         optval=1;                        //Socket属性值
 	unsigned long               ul=1;
 	acceptor_t a;
 	ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -43,6 +43,7 @@ acceptor_t create_acceptor(const char *ip,unsigned long port,on_accept accept_ca
 		return NULL;
 	}
 	ioctlsocket(ListenSocket,FIONBIO,(unsigned long*)&ul);
+	setsockopt(ListenSocket,IPPROTO_TCP,TCP_NODELAY,(char*)&optval,sizeof(optval));         //不采用延时算法 
 
 	a = malloc(sizeof(*a));
 	a->sock = ListenSocket;
