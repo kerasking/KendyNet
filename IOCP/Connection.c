@@ -40,13 +40,6 @@ static rpacket_t unpack(struct connection *c)
 	pk_total_size = pk_len+sizeof(pk_len);
 	if(pk_total_size > c->unpack_size)
 		return 0;
-	/*if(pk_total_size != 24)
-	{
-		printf("fuck 数据错误了,%u\n",pk_total_size);
-		getchar();
-		return 0;
-	}
-	*/
 	r = rpacket_create(c->unpack_buf,c->unpack_pos,pk_len);
 	
 	//调整unpack_buf和unpack_pos
@@ -213,11 +206,6 @@ static void update_send_list(struct connection *c,int bytestransfer)
 	}
 }
 
-static int _connection_send(struct connection *c,struct OverLapContext * O,DWORD *err_code)
-{
-	return WSA_Send(&c->socket,O,1,err_code);
-}
-
 int connection_send(struct connection *c,wpacket_t w,int send)
 {
 	int bytestransfer = 0;
@@ -247,6 +235,15 @@ int connection_send(struct connection *c,wpacket_t w,int send)
 		c->send_overlap.isUsed = 0;
 	}
 	return 1;
+}
+
+void connection_push_packet(struct connection *c,wpacket_t w)
+{
+	if(w)
+	{
+		LIST_PUSH_BACK(c->send_list,w);
+		//printf("list size:%d\n",list_size(c->send_list));
+	}
 }
 
 void SendFinish(struct Socket *s,struct OverLapContext *o,long bytestransfer,DWORD err_code)
@@ -282,13 +279,13 @@ void SendFinish(struct Socket *s,struct OverLapContext *o,long bytestransfer,DWO
 					c->send_overlap.isUsed = 0;
 					return;
 				}
-				bytestransfer = _connection_send(c,o,&err_code);
+				bytestransfer = WSA_Send(&c->socket,o,1,&err_code);
 			}
 		}
 	}
 }
 
-struct connection *connection_create(SOCKET s,process_packet _process_packet)
+struct connection *connection_create(SOCKET s,process_packet _process_packet,on_connection_destroy on_destroy)
 {
 	struct connection *c = calloc(sizeof(*c),1);
 	c->socket.sock = s;
@@ -296,6 +293,7 @@ struct connection *connection_create(SOCKET s,process_packet _process_packet)
 	c->socket.SendFinish = SendFinish;
 	c->send_list = LIST_CREATE();
 	c->_process_packet = _process_packet;
+	c->_on_destroy = on_destroy;
 	c->next_recv_buf = 0;
 	c->next_recv_pos = 0;
 	c->unpack_buf = 0;
@@ -306,6 +304,7 @@ struct connection *connection_create(SOCKET s,process_packet _process_packet)
 
 void connection_destroy(struct connection** c)
 {
+	(*c)->_on_destroy(*c);
 	LIST_DESTROY(&(*c)->send_list);
 	buffer_release(&(*c)->unpack_buf);
 	buffer_release(&(*c)->next_recv_buf);

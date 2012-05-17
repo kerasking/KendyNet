@@ -10,6 +10,7 @@ struct OVERLAPCONTEXT
 };
 
 typedef void (*process_packet)(struct connection*,rpacket_t);
+typedef void (*on_connection_destroy)(struct connection*);
 
 #define MAX_WBAF 64
 
@@ -31,10 +32,14 @@ struct connection
 	
 	struct link_list *send_list;//待发送的包
 	process_packet _process_packet;
+	on_connection_destroy _on_destroy;
 };
 
-struct connection *connection_create(SOCKET s,process_packet);
+struct connection *connection_create(SOCKET s,process_packet,on_connection_destroy);
 void connection_destroy(struct connection**);
+
+//仅仅把包放入发送队列
+void connection_push_packet(struct connection*,wpacket_t);
 
 //返回值:0,连接断开;否则正常
 int connection_send(struct connection*,wpacket_t,int);

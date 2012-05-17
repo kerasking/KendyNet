@@ -150,11 +150,35 @@
 	</References>
 	<Files>
 		<File
+			RelativePath=".\buffer.c"
+			>
+		</File>
+		<File
+			RelativePath=".\buffer.h"
+			>
+		</File>
+		<File
 			RelativePath=".\Connection.c"
 			>
 		</File>
 		<File
 			RelativePath=".\Connection.h"
+			>
+		</File>
+		<File
+			RelativePath=".\rpacket.c"
+			>
+		</File>
+		<File
+			RelativePath=".\rpacket.h"
+			>
+		</File>
+		<File
+			RelativePath=".\wpacket.c"
+			>
+		</File>
+		<File
+			RelativePath=".\wpacket.h"
 			>
 		</File>
 	</Files>

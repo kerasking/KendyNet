@@ -43,7 +43,7 @@ acceptor_t create_acceptor(const char *ip,unsigned long port,on_accept accept_ca
 		return NULL;
 	}
 	ioctlsocket(ListenSocket,FIONBIO,(unsigned long*)&ul);
-	setsockopt(ListenSocket,IPPROTO_TCP,TCP_NODELAY,(char*)&optval,sizeof(optval));         //不采用延时算法 
+	//setsockopt(ListenSocket,IPPROTO_TCP,TCP_NODELAY,(char*)&optval,sizeof(optval));         //不采用延时算法 
 
 	a = malloc(sizeof(*a));
 	a->sock = ListenSocket;

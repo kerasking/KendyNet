@@ -13,8 +13,9 @@ DWORD tick = 0;
 DWORD now = 0;
 unsigned long bf_count = 0;
 int clientcount = 0;
+DWORD last_send_tick = 0;
 
-#define MAX_CLIENT 250
+#define MAX_CLIENT 350
 static struct connection *clients[MAX_CLIENT];
 
 void init_clients()
@@ -30,7 +31,10 @@ void add_client(struct connection *c)
 	for(; i < MAX_CLIENT; ++i)
 	{
 		if(clients[i] == 0)
+		{
 			clients[i] = c;
+			break;
+		}
 	}
 }
 
@@ -38,29 +42,35 @@ void send2_all_client(rpacket_t r)
 {
 	int i = 0;
 	wpacket_t w;
-	//const char *str;
-	//unsigned long s;
-	//s = rpacket_read_long(r);
-	//str = rpacket_read_string(r);
 	for(; i < MAX_CLIENT; ++i)
 	{
 		if(clients[i])
 		{
-			++send_request;
 			w = wpacket_create_by_rpacket(r);
-			//w = wpacket_create(64);
-			//wpacket_write_long(w,s);
-			//wpacket_write_string(w,str);
-			connection_send(clients[i],w,1);
+			++send_request;
+			connection_send(clients[i],w,0);
+			//connection_push_packet(clients[i],w);
+		}
+	}
+}
+
+void remove_client(struct connection *c)
+{
+	int i = 0;
+	for(; i < MAX_CLIENT; ++i)
+	{
+		if(clients[i] == c)
+		{
+			clients[i] = 0;
+			break;
 		}
 	}
 }
 
 void on_process_packet(struct connection *c,rpacket_t r)
 {
+	int i = 0;
 	send2_all_client(r);
-	//wpacket_t w = wpacket_create_by_rpacket(r);
-	//connection_send(c,w,1);
 	rpacket_destroy(&r);
 	now = GetTickCount();
 	++packet_recv;
@@ -72,6 +82,21 @@ void on_process_packet(struct connection *c,rpacket_t r)
 		packet_send = 0;
 		send_request = 0;
 	}
+
+	/*if(now - last_send_tick > 50)
+	{
+		//心跳,每50ms集中发一次包
+		last_send_tick = now;
+		for(i=0; i < MAX_CLIENT; ++i)
+		{
+			if(clients[i])
+			{
+				//++send_request;
+				connection_send(clients[i],0,0);
+			}
+		}
+	}
+	*/
 	
 }
 
@@ -79,7 +104,7 @@ void accept_callback(SOCKET s,void *ud)
 {
 	DWORD err_code = 0;
 	HANDLE *iocp = (HANDLE*)ud;
-	struct connection *c = connection_create(s,on_process_packet);
+	struct connection *c = connection_create(s,on_process_packet,remove_client);
 	add_client(c);
 	//++clientcount;
 	printf("cli fd:%d\n",s);
@@ -110,15 +135,6 @@ int main()
 	while(1)
 	{
 		RunEngine(iocp,50);
-		/*now = GetTickCount();
-		if(now - tick > 1000 && packet_count)
-		{
-			printf("%d,%d\n",packet_count,now - tick);
-			tick = now;
-			packet_count = 0;
-		}
-		*/
-		
 	}
 	return 0;
 }

@@ -16,8 +16,9 @@ DWORD send_request = 0;
 DWORD tick = 0;
 DWORD now = 0;
 unsigned long bf_count = 0;
-#define MAX_CLIENT 200
+#define MAX_CLIENT 350
 static struct connection *clients[MAX_CLIENT];
+DWORD last_recv = 0;
 
 void init_clients()
 {
@@ -32,7 +33,23 @@ void add_client(struct connection *c)
 	for(; i < MAX_CLIENT; ++i)
 	{
 		if(clients[i] == 0)
+		{
 			clients[i] = c;
+			break;
+		}
+	}
+}
+
+void remove_client(struct connection *c)
+{
+	int i = 0;
+	for(; i < MAX_CLIENT; ++i)
+	{
+		if(clients[i] == c)
+		{
+			clients[i] = 0;
+			break;
+		}
 	}
 }
 
@@ -68,9 +85,9 @@ void on_connect_callback(SOCKET s,const char *ip,unsigned long port,void *ud)
 	{
 		printf("%d,连接到:%s,%d,成功\n",s,ip,port);
 		ioctlsocket(s,FIONBIO,(unsigned long*)&ul);
-		setsockopt(s,IPPROTO_TCP,TCP_NODELAY,(char*)&optval,sizeof(optval));         //不采用延时算法 
+		//setsockopt(s,IPPROTO_TCP,TCP_NODELAY,(char*)&optval,sizeof(optval));         //不采用延时算法 
 
-		c = connection_create(s,on_process_packet);
+		c = connection_create(s,on_process_packet,remove_client);
 		add_client(c);
 		Bind2Engine(*iocp,(Socket_t)c);
 		wpk = wpacket_create(64);
