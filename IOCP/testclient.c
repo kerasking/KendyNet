@@ -19,7 +19,7 @@ unsigned long bf_count = 0;
 #define MAX_CLIENT 350
 static struct connection *clients[MAX_CLIENT];
 DWORD last_recv = 0;
-
+unsigned long ava_interval = 0;
 void init_clients()
 {
 	int i = 0;
@@ -55,16 +55,15 @@ void remove_client(struct connection *c)
 
 void on_process_packet(struct connection *c,rpacket_t r)
 {
-	now = GetTickCount();
-	++packet_recv;
-	if(now - tick > 1000)
+	unsigned long s = rpacket_read_long(r);
+	unsigned long t;
+	if(s == c->socket.sock)
 	{
-		printf("packet_recv:%u,packet_send:%u,send_request:%u,interval:%u,bf_count:%u\n",packet_recv,packet_send,send_request,now - tick,bf_count);
-		tick = now;
-		packet_recv = 0;
-		packet_send = 0;
-		send_request = 0;
+		t = rpacket_read_long(r);
+		ava_interval += GetTickCount() - t;
+		ava_interval /= 2;
 	}
+	++packet_recv;
 	rpacket_destroy(&r);
 }
 
@@ -92,6 +91,7 @@ void on_connect_callback(SOCKET s,const char *ip,unsigned long port,void *ud)
 		Bind2Engine(*iocp,(Socket_t)c);
 		wpk = wpacket_create(64);
 		wpacket_write_long(wpk,(unsigned long)s);
+		wpacket_write_long(wpk,GetTickCount());
 		wpacket_write_string(wpk,"hello kenny");
 		connection_send(c,wpk,0);
 		connection_recv(c);
@@ -146,7 +146,6 @@ void testNet()
 	int ret;
 	int i = 0;
 	wpacket_t wpk;
-	getchar();
 	InitNetSystem();
 	init_clients();
 	iocp = CreateNetEngine(1);
@@ -161,12 +160,22 @@ void testNet()
 	while(1)
 	{
 		RunEngine(iocp,50);
+		now = GetTickCount();
+		if(now - tick > 1000)
+		{
+			printf("packet_recv:%u,packet_send:%u,send_request:%u,ava_interval:%u,bf_count:%u\n",packet_recv,packet_send,send_request,ava_interval,bf_count);
+			tick = now;
+			packet_recv = 0;
+			packet_send = 0;
+			send_request = 0;
+		}
 		for(i = 0; i < MAX_CLIENT; ++i)
 		{
 			if(clients[i])
 			{
 				wpk = wpacket_create(64);
 				wpacket_write_long(wpk,clients[i]->socket.sock);
+				wpacket_write_long(wpk,GetTickCount());
 				wpacket_write_string(wpk,"hello kenny");
 				connection_send(clients[i],wpk,0);
 			}

@@ -29,40 +29,43 @@ static void update_next_recv_pos(struct connection *c,long bytestransfer)
 }
 
 //解包
-static rpacket_t unpack(struct connection *c)
+static /*rpacket_t*/void unpack(struct connection *c)
 {
 	unsigned long pk_len = 0;
 	unsigned long pk_total_size;
 	rpacket_t r;
-	if(c->unpack_size <= sizeof(unsigned long))
-		return 0;
-	buffer_read(c->unpack_buf,c->unpack_pos,(char*)&pk_len,sizeof(pk_len));
-	pk_total_size = pk_len+sizeof(pk_len);
-	if(pk_total_size > c->unpack_size)
-		return 0;
-	r = rpacket_create(c->unpack_buf,c->unpack_pos,pk_len);
-	
-	//调整unpack_buf和unpack_pos
-	while(pk_total_size)
+	for(;;)
 	{
-		unsigned long size = c->unpack_buf->size - c->unpack_pos;
-		size = pk_total_size > size ? size:pk_total_size;
-		c->unpack_pos  += size;
-		pk_total_size  -= size;
-		c->unpack_size -= size;
-		if(c->unpack_pos >= c->unpack_buf->capacity)
+		if(c->unpack_size <= sizeof(unsigned long))
+			break;//return 0;
+		buffer_read(c->unpack_buf,c->unpack_pos,(char*)&pk_len,sizeof(pk_len));
+		pk_total_size = pk_len+sizeof(pk_len);
+		if(pk_total_size > c->unpack_size)
+			break;//return 0;
+		r = rpacket_create(c->unpack_buf,c->unpack_pos,pk_len);
+		
+		//调整unpack_buf和unpack_pos
+		while(pk_total_size)
 		{
-			/* unpack之前先执行了update_next_recv_pos,在update_next_recv_pos中
-			*  如果buffer被填满，会扩展一块新的buffer加入链表中，所以这里的
-			*  c->unpack_buf->next不应该会是NULL
-			*/
-			assert(c->unpack_buf->next);
-			c->unpack_pos = 0;
-			c->unpack_buf = buffer_acquire(c->unpack_buf,c->unpack_buf->next);
+			unsigned long size = c->unpack_buf->size - c->unpack_pos;
+			size = pk_total_size > size ? size:pk_total_size;
+			c->unpack_pos  += size;
+			pk_total_size  -= size;
+			c->unpack_size -= size;
+			if(c->unpack_pos >= c->unpack_buf->capacity)
+			{
+				/* unpack之前先执行了update_next_recv_pos,在update_next_recv_pos中
+				*  如果buffer被填满，会扩展一块新的buffer加入链表中，所以这里的
+				*  c->unpack_buf->next不应该会是NULL
+				*/
+				assert(c->unpack_buf->next);
+				c->unpack_pos = 0;
+				c->unpack_buf = buffer_acquire(c->unpack_buf,c->unpack_buf->next);
+			}
 		}
+		c->_process_packet(c,r);
 	}
-	return r;
-
+	//return r;
 }
 
 
@@ -99,8 +102,9 @@ void RecvFinish(struct Socket *s,struct OverLapContext *o,long bytestransfer,DWO
 			{
 				update_next_recv_pos(c,bytestransfer);
 				c->unpack_size += bytestransfer;
-				while(r = unpack(c))
-					c->_process_packet(c,r);
+				unpack(c);
+				//while(r = unpack(c))
+				//	c->_process_packet(c,r);
 				//发起另一次读操作
 				buf = c->next_recv_buf;
 				pos = c->next_recv_pos;

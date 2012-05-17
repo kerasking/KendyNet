@@ -72,32 +72,7 @@ void on_process_packet(struct connection *c,rpacket_t r)
 	int i = 0;
 	send2_all_client(r);
 	rpacket_destroy(&r);
-	now = GetTickCount();
-	++packet_recv;
-	if(now - tick > 1000)
-	{
-		printf("packet_recv:%u,packet_send:%u,send_request:%u,interval:%u,bf_count:%u\n",packet_recv,packet_send,send_request,now - tick,bf_count);
-		tick = now;
-		packet_recv = 0;
-		packet_send = 0;
-		send_request = 0;
-	}
-
-	/*if(now - last_send_tick > 50)
-	{
-		//心跳,每50ms集中发一次包
-		last_send_tick = now;
-		for(i=0; i < MAX_CLIENT; ++i)
-		{
-			if(clients[i])
-			{
-				//++send_request;
-				connection_send(clients[i],0,0);
-			}
-		}
-	}
-	*/
-	
+	++packet_recv;	
 }
 
 void accept_callback(SOCKET s,void *ud)
@@ -124,17 +99,41 @@ int main()
 {
 	DWORD dwThread;
 	HANDLE iocp;
+	unsigned long n;
 	//getchar();
 	init_clients();
 	InitNetSystem();
 	iocp = CreateNetEngine(1);
-
+	
 
 	CreateThread(NULL,0,Listen,&iocp,0,&dwThread);
 	tick = GetTickCount();
 	while(1)
 	{
 		RunEngine(iocp,50);
+		now = GetTickCount();
+		if(now - tick > 1000)
+		{
+			printf("packet_recv:%u,packet_send:%u,send_request:%u,interval:%u,bf_count:%u\n",packet_recv,packet_send,send_request,now - tick,bf_count);
+			tick = now;
+			packet_recv = 0;
+			packet_send = 0;
+			send_request = 0;
+		}
+		/*if(now - last_send_tick > 50)
+		{
+			//心跳,每50ms集中发一次包
+			last_send_tick = now;
+			for(i=0; i < MAX_CLIENT; ++i)
+			{
+				if(clients[i])
+				{
+					//++send_request;
+					connection_send(clients[i],0,0);
+				}
+			}
+		}
+		*/
 	}
 	return 0;
 }
