@@ -16,7 +16,7 @@ DWORD send_request = 0;
 DWORD tick = 0;
 DWORD now = 0;
 unsigned long bf_count = 0;
-#define MAX_CLIENT 100
+#define MAX_CLIENT 380
 static struct connection *clients[MAX_CLIENT];
 DWORD last_recv = 0;
 unsigned long ava_interval = 0;
@@ -53,10 +53,13 @@ void remove_client(struct connection *c)
 	}
 }
 
+connector_t con = NULL;
+
 void on_process_packet(struct connection *c,rpacket_t r)
 {
 	unsigned long s = rpacket_read_long(r);
 	unsigned long t;
+	//connector_run(con,1);
 	if(s == c->socket.sock)
 	{
 		t = rpacket_read_long(r);
@@ -65,6 +68,7 @@ void on_process_packet(struct connection *c,rpacket_t r)
 	}
 	++packet_recv;
 	rpacket_destroy(&r);
+	
 }
 
 void on_connect_callback(SOCKET s,const char *ip,unsigned long port,void *ud)
@@ -142,7 +146,7 @@ void test2()
 void testNet()
 {
 	HANDLE iocp;
-	connector_t c = NULL;
+	
 	int ret;
 	int i = 0;
 	wpacket_t wpk;
@@ -151,17 +155,17 @@ void testNet()
 	InitNetSystem();
 	init_clients();
 	iocp = CreateNetEngine(1);
-	c =  connector_create();
+	con =  connector_create();
 	for( ; i < MAX_CLIENT;++i)
 	{
-		ret = connector_connect(c,"192.168.6.11",8010,on_connect_callback,&iocp,1000*20);
+		ret = connector_connect(con,"192.168.6.11",8010,on_connect_callback,&iocp,1000*20);
 		Sleep(1);
 	}
 	//while(connect_count < 1)
 	//	connector_run(c,0);
 	while(1)
 	{
-		connector_run(c,1);
+		connector_run(con,1);
 		RunEngine(iocp,50);
 		now = GetTickCount();
 		if(now - tick > 1000)
