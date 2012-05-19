@@ -5,7 +5,7 @@
 #include "Connection.h"
 #include <assert.h>
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 16384
 
 //接收相关函数
 static void update_next_recv_pos(struct connection *c,long bytestransfer)
@@ -308,7 +308,12 @@ struct connection *connection_create(SOCKET s,process_packet _process_packet,on_
 
 void connection_destroy(struct connection** c)
 {
+	wpacket_t w;
 	(*c)->_on_destroy(*c);
+
+	while(w = LIST_POP(wpacket_t,(*c)->send_list))
+		wpacket_destroy(&w);
+
 	LIST_DESTROY(&(*c)->send_list);
 	buffer_release(&(*c)->unpack_buf);
 	buffer_release(&(*c)->next_recv_buf);

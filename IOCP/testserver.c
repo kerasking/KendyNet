@@ -15,7 +15,7 @@ unsigned long bf_count = 0;
 int clientcount = 0;
 DWORD last_send_tick = 0;
 
-#define MAX_CLIENT 350
+#define MAX_CLIENT 370
 static struct connection *clients[MAX_CLIENT];
 
 void init_clients()
@@ -100,7 +100,10 @@ int main()
 	DWORD dwThread;
 	HANDLE iocp;
 	unsigned long n;
+	int i = 0;
 	//getchar();
+	init_wpacket_pool(10000000);
+	init_rpacket_pool(10000000);
 	init_clients();
 	InitNetSystem();
 	iocp = CreateNetEngine(1);
@@ -120,7 +123,7 @@ int main()
 			packet_send = 0;
 			send_request = 0;
 		}
-		/*if(now - last_send_tick > 50)
+		/*if(now - last_send_tick > 25)
 		{
 			//心跳,每50ms集中发一次包
 			last_send_tick = now;
@@ -128,12 +131,15 @@ int main()
 			{
 				if(clients[i])
 				{
-					//++send_request;
+					++send_request;
 					connection_send(clients[i],0,0);
 				}
 			}
 		}
 		*/
+		
+		
+		
 	}
 	return 0;
 }

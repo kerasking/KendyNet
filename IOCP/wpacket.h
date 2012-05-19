@@ -56,4 +56,7 @@ void wpacket_rewrite_double(write_pos*,double);
 //不提供对非定长数据的rewrite
 void wpacket_write_string(wpacket_t,const char*);
 void wpacket_write_binary(wpacket_t,const void*,unsigned long);
+
+
+void init_wpacket_pool(unsigned long pool_size);
 #endif

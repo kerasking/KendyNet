@@ -18,9 +18,10 @@
 #define _RPACKET_H
 
 #include "buffer.h"
-
+#include "link_list.h"
 typedef struct rpacket
 {
+	list_node next;
 	unsigned long len;     //包长(去除包长度字段)
 	unsigned long rpos;    //读下标
 	unsigned long data_remain;
@@ -46,5 +47,6 @@ unsigned long  rpacket_read_long(rpacket_t);
 double         rpacket_read_double(rpacket_t);
 const char*    rpacket_read_string(rpacket_t);
 const void*    rpacket_read_binary(rpacket_t,unsigned long *len);
+void init_rpacket_pool(unsigned long pool_size);
 
 #endif

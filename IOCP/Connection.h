@@ -12,7 +12,7 @@ struct OVERLAPCONTEXT
 typedef void (*process_packet)(struct connection*,rpacket_t);
 typedef void (*on_connection_destroy)(struct connection*);
 
-#define MAX_WBAF 64
+#define MAX_WBAF 1024
 
 struct connection
 {

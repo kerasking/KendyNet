@@ -16,7 +16,7 @@ DWORD send_request = 0;
 DWORD tick = 0;
 DWORD now = 0;
 unsigned long bf_count = 0;
-#define MAX_CLIENT 350
+#define MAX_CLIENT 370
 static struct connection *clients[MAX_CLIENT];
 DWORD last_recv = 0;
 unsigned long ava_interval = 0;
@@ -146,6 +146,8 @@ void testNet()
 	int ret;
 	int i = 0;
 	wpacket_t wpk;
+	init_wpacket_pool(10000000);
+	init_rpacket_pool(10000000);
 	InitNetSystem();
 	init_clients();
 	iocp = CreateNetEngine(1);

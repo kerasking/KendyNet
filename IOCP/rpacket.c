@@ -2,10 +2,32 @@
 #include "wpacket.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+
+static struct link_list *g_rpacket_pool;
+
+void init_rpacket_pool(unsigned long pool_size)
+{
+	unsigned long i = 0;
+	rpacket_t r;// = calloc(sizeof(*w),1);
+	g_rpacket_pool = LIST_CREATE();
+	for( ; i < pool_size; ++i)
+	{
+		r = calloc(sizeof(*r),1);
+		LIST_PUSH_BACK(g_rpacket_pool,r);
+	}
+}
 
 rpacket_t rpacket_create(buffer_t b,unsigned long pos,unsigned long pk_len)
 {
-	rpacket_t r = calloc(sizeof(*r),1);
+	rpacket_t r = LIST_POP(rpacket_t,g_rpacket_pool);//calloc(sizeof(*r),1);
+	if(!r)
+	{
+		printf("r缓存不够了\n");
+		getchar();
+		exit(0);
+	}
+	
 	r->binbuf = 0;
 	r->binbufpos = 0;
 	r->buf = buffer_acquire(0,b);
@@ -19,7 +41,14 @@ rpacket_t rpacket_create(buffer_t b,unsigned long pos,unsigned long pk_len)
 
 rpacket_t rpacket_create_by_wpacket(struct wpacket *w)
 {
-	rpacket_t r = calloc(sizeof(*r),1);
+	rpacket_t r = LIST_POP(rpacket_t,g_rpacket_pool);//calloc(sizeof(*r),1);
+	if(!r)
+	{
+		printf("r缓存不够了\n");
+		getchar();
+		exit(0);
+	}
+	
 	r->binbuf = 0;
 	r->binbufpos = 0;
 	r->buf = buffer_acquire(0,w->buf);
@@ -35,10 +64,12 @@ rpacket_t rpacket_create_by_wpacket(struct wpacket *w)
 void      rpacket_destroy(rpacket_t *r)
 {
 	//释放所有对buffer_t的引用
+	
 	buffer_release(&(*r)->buf);
 	buffer_release(&(*r)->readbuf);
 	buffer_release(&(*r)->binbuf);
-	free(*r);
+	//free(*r);
+	LIST_PUSH_BACK(g_rpacket_pool,*r);
 	*r = 0;
 }
 

@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 #include "rpacket.h"
+
+static struct link_list *g_wpacket_pool;
 
 static int is_pow_of_2(unsigned long size)
 {
@@ -25,12 +28,42 @@ static unsigned char GetK(unsigned long size)
 	return k;
 }
 
+
+void init_wpacket_pool(unsigned long pool_size)
+{
+	unsigned long i = 0;
+	wpacket_t w;// = calloc(sizeof(*w),1);
+	g_wpacket_pool = LIST_CREATE();
+	for( ; i < pool_size; ++i)
+	{
+		w = calloc(sizeof(*w),1);
+		LIST_PUSH_BACK(g_wpacket_pool,w);
+	}
+}
+
+//static wpacket_t wpacket_get()
+//{
+//	wpacket_t w = LIST_POP(wpacket_t,g_wpacket_pool);
+//	return w;
+//}
+
+//static void wpacket_put(wpacket_t w)
+//{
+//	LIST_PUSH_BACK(g_wpacket_pool,w);
+//}
+
 wpacket_t wpacket_create(unsigned long size)
 {
 	unsigned char k = GetK(size);
 	wpacket_t w;
 	size = 1 << k;
-	w = calloc(sizeof(*w),1);
+	w = LIST_POP(wpacket_t,g_wpacket_pool);//calloc(sizeof(*w),1);
+	if(!w)
+	{
+		printf("缓存不够了\n");
+		getchar();
+		exit(0);
+	}
 	w->factor = k;
 	w->wpos = sizeof(w->len);
 	w->buf = buffer_create_and_acquire(0,size);
@@ -45,7 +78,13 @@ wpacket_t wpacket_create(unsigned long size)
 
 wpacket_t wpacket_create_by_rpacket(struct rpacket *r)
 {
-	wpacket_t w = calloc(sizeof(*w),1);
+	wpacket_t w = LIST_POP(wpacket_t,g_wpacket_pool);//calloc(sizeof(*w),1);
+	if(!w)
+	{
+		printf("缓存不够了\n");
+		getchar();
+		exit(0);
+	}
 	w->factor = 0;
 	w->writebuf = 0;
 	w->begin_pos = r->begin_pos;
@@ -66,7 +105,9 @@ void wpacket_destroy(wpacket_t *w)
 {
 	buffer_release(&(*w)->buf);
 	buffer_release(&(*w)->writebuf);
-	free(*w);
+	LIST_PUSH_BACK(g_wpacket_pool,*w);
+	//wpacket_put(*w);
+	//free(*w);
 	*w = 0;
 }
 
