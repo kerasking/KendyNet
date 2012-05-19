@@ -15,7 +15,7 @@ unsigned long bf_count = 0;
 int clientcount = 0;
 DWORD last_send_tick = 0;
 
-#define MAX_CLIENT 370
+#define MAX_CLIENT 1000
 static struct connection *clients[MAX_CLIENT];
 
 void init_clients()
@@ -48,8 +48,8 @@ void send2_all_client(rpacket_t r)
 		{
 			w = wpacket_create_by_rpacket(r);
 			++send_request;
-			connection_send(clients[i],w,0);
-			//connection_push_packet(clients[i],w);
+			//connection_send(clients[i],w,0);
+			connection_push_packet(clients[i],w);
 		}
 	}
 }
@@ -113,17 +113,17 @@ int main()
 	tick = GetTickCount();
 	while(1)
 	{
-		RunEngine(iocp,50);
+		RunEngine(iocp,10);
 		now = GetTickCount();
 		if(now - tick > 1000)
 		{
-			printf("packet_recv:%u,packet_send:%u,send_request:%u,interval:%u,bf_count:%u\n",packet_recv,packet_send,send_request,now - tick,bf_count);
+			printf("packet_recv:%u,packet_send:%u,send_request:%u,wpacket_pool_size:%u,bf_count:%u\n",packet_recv,packet_send,send_request,wpacket_pool_size(),bf_count);
 			tick = now;
 			packet_recv = 0;
 			packet_send = 0;
 			send_request = 0;
 		}
-		/*if(now - last_send_tick > 25)
+		if(now - last_send_tick > 25)
 		{
 			//心跳,每50ms集中发一次包
 			last_send_tick = now;
@@ -136,7 +136,6 @@ int main()
 				}
 			}
 		}
-		*/
 		
 		
 		

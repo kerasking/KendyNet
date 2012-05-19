@@ -16,7 +16,7 @@ DWORD send_request = 0;
 DWORD tick = 0;
 DWORD now = 0;
 unsigned long bf_count = 0;
-#define MAX_CLIENT 380
+#define MAX_CLIENT 400
 static struct connection *clients[MAX_CLIENT];
 DWORD last_recv = 0;
 unsigned long ava_interval = 0;

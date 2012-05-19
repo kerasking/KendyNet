@@ -59,4 +59,6 @@ void wpacket_write_binary(wpacket_t,const void*,unsigned long);
 
 
 void init_wpacket_pool(unsigned long pool_size);
+
+unsigned long wpacket_pool_size();
 #endif

@@ -41,6 +41,11 @@ void init_wpacket_pool(unsigned long pool_size)
 	}
 }
 
+unsigned long wpacket_pool_size()
+{
+	return list_size(g_wpacket_pool);
+}
+
 //static wpacket_t wpacket_get()
 //{
 //	wpacket_t w = LIST_POP(wpacket_t,g_wpacket_pool);
@@ -64,6 +69,8 @@ wpacket_t wpacket_create(unsigned long size)
 		getchar();
 		exit(0);
 	}
+	
+	//w = calloc(sizeof(*w),1);
 	w->factor = k;
 	w->wpos = sizeof(w->len);
 	w->buf = buffer_create_and_acquire(0,size);
@@ -85,6 +92,8 @@ wpacket_t wpacket_create_by_rpacket(struct rpacket *r)
 		getchar();
 		exit(0);
 	}
+	
+	//wpacket_t w = calloc(sizeof(*w),1);
 	w->factor = 0;
 	w->writebuf = 0;
 	w->begin_pos = r->begin_pos;
@@ -106,7 +115,6 @@ void wpacket_destroy(wpacket_t *w)
 	buffer_release(&(*w)->buf);
 	buffer_release(&(*w)->writebuf);
 	LIST_PUSH_BACK(g_wpacket_pool,*w);
-	//wpacket_put(*w);
 	//free(*w);
 	*w = 0;
 }

@@ -20,6 +20,7 @@ void init_rpacket_pool(unsigned long pool_size)
 
 rpacket_t rpacket_create(buffer_t b,unsigned long pos,unsigned long pk_len)
 {
+
 	rpacket_t r = LIST_POP(rpacket_t,g_rpacket_pool);//calloc(sizeof(*r),1);
 	if(!r)
 	{
@@ -27,6 +28,8 @@ rpacket_t rpacket_create(buffer_t b,unsigned long pos,unsigned long pk_len)
 		getchar();
 		exit(0);
 	}
+
+	//rpacket_t r = calloc(sizeof(*r),1);
 	
 	r->binbuf = 0;
 	r->binbufpos = 0;
@@ -48,6 +51,7 @@ rpacket_t rpacket_create_by_wpacket(struct wpacket *w)
 		getchar();
 		exit(0);
 	}
+	//rpacket_t r = calloc(sizeof(*r),1);
 	
 	r->binbuf = 0;
 	r->binbufpos = 0;
