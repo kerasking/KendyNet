@@ -95,6 +95,7 @@ DWORD WINAPI Listen(void *arg)
 		acceptor_run(a,100);
 	return 0;
 }
+
 int main()
 {
 	DWORD dwThread;
@@ -107,7 +108,6 @@ int main()
 	init_clients();
 	InitNetSystem();
 	iocp = CreateNetEngine(1);
-	
 
 	CreateThread(NULL,0,Listen,&iocp,0,&dwThread);
 	tick = GetTickCount();

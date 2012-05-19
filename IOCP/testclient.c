@@ -16,7 +16,7 @@ DWORD send_request = 0;
 DWORD tick = 0;
 DWORD now = 0;
 unsigned long bf_count = 0;
-#define MAX_CLIENT 370
+#define MAX_CLIENT 100
 static struct connection *clients[MAX_CLIENT];
 DWORD last_recv = 0;
 unsigned long ava_interval = 0;
@@ -157,10 +157,11 @@ void testNet()
 		ret = connector_connect(c,"192.168.6.11",8010,on_connect_callback,&iocp,1000*20);
 		Sleep(1);
 	}
-	while(connect_count < 1)
-		connector_run(c,0);
+	//while(connect_count < 1)
+	//	connector_run(c,0);
 	while(1)
 	{
+		connector_run(c,1);
 		RunEngine(iocp,50);
 		now = GetTickCount();
 		if(now - tick > 1000)

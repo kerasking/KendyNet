@@ -37,7 +37,7 @@ acceptor_t create_acceptor(const char *ip,unsigned long port,on_accept accept_ca
 		return NULL;
 	}
 
-	if((listen(ListenSocket, 5)) == SOCKET_ERROR)
+	if((listen(ListenSocket, 256)) == SOCKET_ERROR)
 	{
 		closesocket(ListenSocket);
 		return NULL;
