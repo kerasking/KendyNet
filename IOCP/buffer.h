@@ -19,8 +19,11 @@
 /*
 * 带引用计数的buffer
 */
+
+#include "link_list.h"
 typedef struct buffer
 {
+	list_node lnode;
 	long ref_count;
 	unsigned long capacity;
 	unsigned long size;
@@ -33,6 +36,9 @@ buffer_t buffer_create_and_acquire(buffer_t,unsigned long);
 buffer_t buffer_acquire(buffer_t,buffer_t);
 void     buffer_release(buffer_t*);
 int      buffer_read(buffer_t,unsigned long,char*,unsigned long);
+
+void     buffer_init_maxbuffer_size(unsigned long);
+void     buffer_init_64(unsigned long);
 
 
 

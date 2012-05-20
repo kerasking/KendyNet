@@ -150,8 +150,10 @@ void testNet()
 	int ret;
 	int i = 0;
 	wpacket_t wpk;
-	init_wpacket_pool(10000000);
+	init_wpacket_pool(500000);
 	init_rpacket_pool(10000000);
+	buffer_init_maxbuffer_size(2000);
+	buffer_init_64(2000);
 	InitNetSystem();
 	init_clients();
 	iocp = CreateNetEngine(1);

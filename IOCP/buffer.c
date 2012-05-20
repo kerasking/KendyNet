@@ -5,10 +5,52 @@
 
 extern unsigned long bf_count;
 
+static struct link_list *g_buffer_max;
+static struct link_list *g_buffer_64;
+
+void     buffer_init_maxbuffer_size(unsigned long pool_size)
+{
+	unsigned long i = 0;
+	unsigned long size = sizeof(struct buffer) + 16384;
+	buffer_t b;
+	g_buffer_max = LIST_CREATE();
+	for( ; i < pool_size; ++i)
+	{
+		b = calloc(1,size);
+		LIST_PUSH_BACK(g_buffer_max,b);
+	}
+}
+
+void     buffer_init_64(unsigned long pool_size)
+{
+	unsigned long i = 0;
+	unsigned long size = sizeof(struct buffer) + 64;
+	buffer_t b;
+	g_buffer_64 = LIST_CREATE();
+	for( ; i < pool_size; ++i)
+	{
+		b = calloc(1,size);
+		LIST_PUSH_BACK(g_buffer_64,b);
+	}
+
+}
+
+
+
+
 static buffer_t buffer_create(unsigned long capacity)
 {
 	unsigned long size = sizeof(struct buffer) + capacity;
-	buffer_t b = calloc(size,1);
+	//buffer_t b = calloc(1,size);
+	
+	buffer_t b;
+	if(capacity == 16384)
+		b = LIST_POP(buffer_t,g_buffer_max);
+	else if(capacity == 64)
+		b = LIST_POP(buffer_t,g_buffer_64);
+	else
+		b = calloc(1,size);
+	
 	if(b)
 	{
 		//printf("buffer create\n");
@@ -25,7 +67,14 @@ static void     buffer_destroy(buffer_t *b)
 	//printf("buffer destroy\n");
 	if((*b)->next)
 		buffer_release(&(*b)->next);
-	free(*b);
+	
+	if((*b)->capacity == 16384)
+		LIST_PUSH_BACK(g_buffer_max,*b);
+	else if((*b)->capacity == 64)
+		LIST_PUSH_BACK(g_buffer_64,*b);
+	else
+		free(*b);
+	//free(*b);
 	*b = 0;
 	--bf_count;
 }

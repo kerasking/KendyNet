@@ -291,7 +291,7 @@ void SendFinish(struct Socket *s,struct OverLapContext *o,long bytestransfer,DWO
 
 struct connection *connection_create(SOCKET s,process_packet _process_packet,on_connection_destroy on_destroy)
 {
-	struct connection *c = calloc(sizeof(*c),1);
+	struct connection *c = calloc(1,sizeof(*c));
 	c->socket.sock = s;
 	c->socket.RecvFinish = RecvFinish;
 	c->socket.SendFinish = SendFinish;

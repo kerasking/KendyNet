@@ -9,11 +9,11 @@ static struct link_list *g_rpacket_pool;
 void init_rpacket_pool(unsigned long pool_size)
 {
 	unsigned long i = 0;
-	rpacket_t r;// = calloc(sizeof(*w),1);
+	rpacket_t r;// = calloc(1,sizeof(*w));
 	g_rpacket_pool = LIST_CREATE();
 	for( ; i < pool_size; ++i)
 	{
-		r = calloc(sizeof(*r),1);
+		r = calloc(1,sizeof(*r));
 		LIST_PUSH_BACK(g_rpacket_pool,r);
 	}
 }
@@ -21,7 +21,7 @@ void init_rpacket_pool(unsigned long pool_size)
 rpacket_t rpacket_create(buffer_t b,unsigned long pos,unsigned long pk_len)
 {
 
-	rpacket_t r = LIST_POP(rpacket_t,g_rpacket_pool);//calloc(sizeof(*r),1);
+	rpacket_t r = LIST_POP(rpacket_t,g_rpacket_pool);//calloc(1,sizeof(*r));
 	if(!r)
 	{
 		printf("r缓存不够了\n");
@@ -29,7 +29,7 @@ rpacket_t rpacket_create(buffer_t b,unsigned long pos,unsigned long pk_len)
 		exit(0);
 	}
 
-	//rpacket_t r = calloc(sizeof(*r),1);
+	//rpacket_t r = calloc(1,sizeof(*r));
 	
 	r->binbuf = 0;
 	r->binbufpos = 0;
@@ -44,14 +44,14 @@ rpacket_t rpacket_create(buffer_t b,unsigned long pos,unsigned long pk_len)
 
 rpacket_t rpacket_create_by_wpacket(struct wpacket *w)
 {
-	rpacket_t r = LIST_POP(rpacket_t,g_rpacket_pool);//calloc(sizeof(*r),1);
+	rpacket_t r = LIST_POP(rpacket_t,g_rpacket_pool);//calloc(1,sizeof(*r));
 	if(!r)
 	{
 		printf("r缓存不够了\n");
 		getchar();
 		exit(0);
 	}
-	//rpacket_t r = calloc(sizeof(*r),1);
+	//rpacket_t r = calloc(1,sizeof(*r));
 	
 	r->binbuf = 0;
 	r->binbufpos = 0;

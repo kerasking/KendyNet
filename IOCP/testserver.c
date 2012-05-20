@@ -104,7 +104,9 @@ int main()
 	int i = 0;
 	//getchar();
 	init_wpacket_pool(10000000);
-	init_rpacket_pool(10000000);
+	init_rpacket_pool(500000);
+	buffer_init_maxbuffer_size(2000);
+	buffer_init_64(2000);
 	init_clients();
 	InitNetSystem();
 	iocp = CreateNetEngine(1);
