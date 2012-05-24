@@ -121,7 +121,10 @@ int buffer_read(buffer_t b,unsigned long pos,char *out,unsigned long size)
 		pos += copy_size;
 		out += copy_size;
 		if(pos >= b->size)
+		{
+			pos = 0;
 			b = b->next;
+		}
 	}
 	return 0;
 }
