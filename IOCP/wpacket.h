@@ -18,16 +18,17 @@
 #define _WPACKET_H
 #include "buffer.h"
 #include "link_list.h"
+#include "stdint.h"
 typedef struct wpacket
 {
 	list_node next;
-	unsigned long *len;      //包长字段(去除包长度字段以外实际数据的长度)在buf中的地址
+	uint32_t *len;      //包长字段(去除包长度字段以外实际数据的长度)在buf中的地址
 	buffer_t buf;            //所有数据组成的buf链
 	buffer_t writebuf;       //wpos所在的buf
-	unsigned long wpos;
-	unsigned char factor;
-	unsigned long begin_pos; //属于本包的数据在首buf中的起始位置
-	unsigned long data_size;//实际数据大小,包含包长度
+	uint32_t wpos;
+	uint8_t factor;
+	uint32_t begin_pos; //属于本包的数据在首buf中的起始位置
+	uint32_t data_size;//实际数据大小,包含包长度
 }*wpacket_t;
 struct rpacket;
 
@@ -35,30 +36,32 @@ struct rpacket;
 typedef struct
 {
 	buffer_t buf;
-	unsigned long wpos;
+	uint32_t wpos;
 }write_pos;
 
-wpacket_t wpacket_create(unsigned long size);
+wpacket_t wpacket_create(uint32_t size);
 wpacket_t wpacket_create_by_rpacket(struct rpacket*);//通过rpacket构造
 void wpacket_destroy(wpacket_t*);
 
 write_pos wpacket_get_writepos(wpacket_t);
-void wpacket_write_char(wpacket_t,unsigned char);
-void wpacket_write_short(wpacket_t,unsigned short);
-void wpacket_write_long(wpacket_t,unsigned long);
+void wpacket_write_uint8(wpacket_t,uint8_t);
+void wpacket_write_uint16(wpacket_t,uint16_t);
+void wpacket_write_uint32(wpacket_t,uint32_t);
+void wpacket_write_uint64(wpacket_t,uint64_t);
 void wpacket_write_double(wpacket_t,double);
 
-void wpacket_rewrite_char(write_pos*,unsigned char);
-void wpacket_rewrite_short(write_pos*,unsigned short);
-void wpacket_rewrite_long(write_pos*,unsigned long);
+void wpacket_rewrite_uint8(write_pos*,uint8_t);
+void wpacket_rewrite_uint16(write_pos*,uint16_t);
+void wpacket_rewrite_uint32(write_pos*,uint32_t);
+void wpacket_rewrite_uint64(write_pos*,uint64_t);
 void wpacket_rewrite_double(write_pos*,double);
 
 //不提供对非定长数据的rewrite
 void wpacket_write_string(wpacket_t,const char*);
-void wpacket_write_binary(wpacket_t,const void*,unsigned long);
+void wpacket_write_binary(wpacket_t,const void*,uint32_t);
 
 
-void init_wpacket_pool(unsigned long pool_size);
+void init_wpacket_pool(uint32_t pool_size);
 
-unsigned long wpacket_pool_size();
+uint32_t wpacket_pool_size();
 #endif

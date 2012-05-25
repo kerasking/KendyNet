@@ -19,9 +19,9 @@ enum
 	IO_REQUEST = (1<<1) + (1<<3),
 };
 
-int    InitNetSystem()
+int32_t    InitNetSystem()
 {
-	int nResult;
+	int32_t nResult;
 	WSADATA wsaData;
 	nResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 	if (NO_ERROR != nResult)
@@ -57,10 +57,10 @@ void   CloseNetEngine(HANDLE CompletePort)
 *  == 0 :WSA_IO_PENDING
 *  <  0 :error or socket close
 */
-static int raw_Send(Socket_t s,struct OverLapContext *overLapped,DWORD *err_code)
+static int32_t raw_Send(Socket_t s,struct OverLapContext *overLapped,uint32_t *err_code)
 {
-	DWORD dwFlags = 0;
-	DWORD dwBytes = 0;
+	uint32_t dwFlags = 0;
+	uint32_t dwBytes = 0;
 	if(SOCKET_ERROR == WSASend(s->sock, overLapped->wbuf, overLapped->buf_count, 
 		&dwBytes, dwFlags, (OVERLAPPED*)overLapped, NULL))
 	{
@@ -72,11 +72,11 @@ static int raw_Send(Socket_t s,struct OverLapContext *overLapped,DWORD *err_code
 		return dwBytes;
 }
 
-static int raw_Recv(Socket_t s,struct OverLapContext *overLapped,DWORD *err_code)
+static int raw_Recv(Socket_t s,struct OverLapContext *overLapped,uint32_t *err_code)
 {
-	DWORD dwFlags = 0;
-	DWORD dwBytes = 0;
-	int ret = 0;
+	uint32_t dwFlags = 0;
+	uint32_t dwBytes = 0;
+	int32_t ret = 0;
 	if(SOCKET_ERROR == WSARecv(s->sock, overLapped->wbuf, overLapped->buf_count, 
 		&dwBytes, &dwFlags, (OVERLAPPED*)overLapped, NULL))
 	{
@@ -88,20 +88,20 @@ static int raw_Recv(Socket_t s,struct OverLapContext *overLapped,DWORD *err_code
 		return dwBytes;
 }
 
-
-typedef void (*CallBack)(struct Socket*,struct OverLapContext*,long,DWORD);
+extern uint32_t iocp_count;
+typedef void (*CallBack)(struct Socket*,struct OverLapContext*,int32_t,uint32_t);
 int    RunEngine(HANDLE CompletePort,DWORD timeout)
 {
 
-	long bytesTransfer;
+	int32_t bytesTransfer;
 	Socket_t       socket;
 	struct OverLapContext *overLapped = 0;
-	DWORD lastErrno = 0;
+	uint32_t lastErrno = 0;
 	BOOL bReturn;
 	CallBack call_back;
-	DWORD ms;
-	DWORD tick = GetTickCount();
-	DWORD _timeout = tick + timeout;
+	uint32_t ms;
+	uint32_t tick = GetTickCount();
+	uint32_t _timeout = tick + timeout;
 	do
 	{
 		ms = _timeout - tick;
@@ -113,7 +113,10 @@ int    RunEngine(HANDLE CompletePort,DWORD timeout)
 			(OVERLAPPED**)&overLapped,ms);
 		
 		if(FALSE == bReturn && !overLapped)// || socket == NULL || overLapped == NULL)
+		{
+			++iocp_count;
 			break;
+		}
 		if(0 == bytesTransfer)
 		{
 			//连接中断或错误
@@ -127,7 +130,7 @@ int    RunEngine(HANDLE CompletePort,DWORD timeout)
 		}
 		else
 		{
-
+			//++iocp_count;
 			if(overLapped->m_Type & IO_REQUEST)
 			{
 				overLapped->m_Type = overLapped->m_Type << 1;
@@ -178,7 +181,7 @@ int    Bind2Engine(HANDLE CompletePort,Socket_t socket)
 	return 0;
 }
 
-int    WSA_Send(Socket_t socket,struct OverLapContext *OverLap,int now,DWORD *err_code)
+int32_t    WSA_Send(Socket_t socket,struct OverLapContext *OverLap,int32_t now,uint32_t *err_code)
 {
 	if(!socket->complete_port)
 		return UNBIND2ENGINE;
@@ -198,7 +201,7 @@ int    WSA_Send(Socket_t socket,struct OverLapContext *OverLap,int now,DWORD *er
 	}
 }
 
-int    WSA_Recv(Socket_t socket,struct OverLapContext *OverLap,int now,DWORD *err_code)
+int32_t    WSA_Recv(Socket_t socket,struct OverLapContext *OverLap,int32_t now,uint32_t *err_code)
 {
 	if(!socket->complete_port)
 		return UNBIND2ENGINE;

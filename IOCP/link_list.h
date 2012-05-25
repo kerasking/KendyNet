@@ -1,6 +1,6 @@
 #ifndef _LINK_LIST_H
 #define _LINK_LIST_H
-
+#include "stdint.h"
 
 typedef struct list_node
 {
@@ -17,9 +17,9 @@ list_node* list_head(struct link_list*);
 
 list_node* list_pop(struct link_list*);
 
-int list_is_empty(struct link_list*);
+int32_t list_is_empty(struct link_list*);
 
-int list_size(struct link_list*);
+int32_t list_size(struct link_list*);
 
 struct link_list *create_list();
 

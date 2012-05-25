@@ -4,7 +4,7 @@
 
 typedef struct link_list
 {
-	int size;
+	int32_t size;
 	list_node *head;
 	list_node *tail;
 	
@@ -84,11 +84,11 @@ list_node* list_pop(link_list *l)
 	return ret;
 }
 
-int list_is_empty(link_list *l)
+int32_t list_is_empty(link_list *l)
 {
 	return l->size == 0;
 }
-int list_size(link_list *l)
+int32_t list_size(link_list *l)
 {
 	return l->size;
 }

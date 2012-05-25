@@ -8,10 +8,10 @@ typedef struct pending_connect
 {
 	list_node  lnode;
 	const char *ip;
-	unsigned long port;
+	uint32_t port;
 	SOCKET   sock;
 	on_connect call_back;
-	unsigned long timeout;
+	uint32_t timeout;
 	void     *ud;
 };
 
@@ -19,7 +19,7 @@ struct connector
 {
 	FD_SET Set;
 	struct link_list *_pending_connect;
-	unsigned long fd_seisize;
+	uint32_t fd_seisize;
 };
 
 connector_t connector_create()
@@ -40,7 +40,7 @@ void connector_destroy(connector_t *c)
 	*c = 0;
 }
 
-int connector_connect(connector_t c,const char *ip,unsigned long port,on_connect call_back,void *ud,unsigned long ms)
+int connector_connect(connector_t c,const char *ip,uint32_t port,on_connect call_back,void *ud,uint32_t ms)
 {
 	struct sockaddr_in remote;
 	ULONG NonBlock = 1; 
@@ -88,12 +88,12 @@ int connector_connect(connector_t c,const char *ip,unsigned long port,on_connect
 	return 0;
 }
 
-void connector_run(connector_t c,unsigned long ms)
+void connector_run(connector_t c,uint32_t ms)
 {
-	int i = 0;
+	int32_t i = 0;
 	DWORD tick,_timeout,_ms;
-	int size;
-	int total;
+	int32_t size;
+	int32_t total;
 	struct pending_connect *pc;
 	struct timeval timeout;
 	tick = GetTickCount();
@@ -127,7 +127,7 @@ void connector_run(connector_t c,unsigned long ms)
 		tick = GetTickCount();
 		size = list_size(c->_pending_connect);
 		i = 0;
-		for(; i < (int)size; ++i)
+		for(; i < (int32_t)size; ++i)
 		{
 			pc = LIST_POP(struct pending_connect*,c->_pending_connect);
 			if(tick >= pc->timeout)

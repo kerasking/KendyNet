@@ -6,9 +6,9 @@
 
 static struct link_list *g_rpacket_pool;
 
-void init_rpacket_pool(unsigned long pool_size)
+void init_rpacket_pool(uint32_t pool_size)
 {
-	unsigned long i = 0;
+	uint32_t i = 0;
 	rpacket_t r;// = calloc(1,sizeof(*w));
 	g_rpacket_pool = LIST_CREATE();
 	for( ; i < pool_size; ++i)
@@ -18,7 +18,7 @@ void init_rpacket_pool(unsigned long pool_size)
 	}
 }
 
-rpacket_t rpacket_create(buffer_t b,unsigned long pos,unsigned long pk_len)
+rpacket_t rpacket_create(buffer_t b,uint32_t pos,uint32_t pk_len)
 {
 
 	rpacket_t r = LIST_POP(rpacket_t,g_rpacket_pool);//calloc(1,sizeof(*r));
@@ -77,24 +77,24 @@ void      rpacket_destroy(rpacket_t *r)
 	*r = 0;
 }
 
-unsigned long  rpacket_len(rpacket_t r)
+uint32_t  rpacket_len(rpacket_t r)
 {
 	return r->len;
 }
 
-unsigned long  rpacket_data_remain(rpacket_t r)
+uint32_t  rpacket_data_remain(rpacket_t r)
 {
 	return r->data_remain;
 }
 
-static int rpacket_read(rpacket_t r,char *out,unsigned long size)
+static int rpacket_read(rpacket_t r,int8_t *out,uint32_t size)
 {
 	buffer_t _next = 0;
 	if(r->data_remain < size)
 		return -1;
 	while(size>0)
 	{
-		unsigned long copy_size = r->readbuf->size - r->rpos;
+		uint32_t copy_size = r->readbuf->size - r->rpos;
 		copy_size = copy_size >= size ? size:copy_size;
 		memcpy(out,r->readbuf->buf + r->rpos,copy_size);
 		size -= copy_size;
@@ -111,7 +111,7 @@ static int rpacket_read(rpacket_t r,char *out,unsigned long size)
 	return 0;
 }
 
-unsigned char  rpacket_read_char(rpacket_t r)
+/*unsigned char  rpacket_read_char(rpacket_t r)
 {
 	unsigned char value = 0;
 	rpacket_read(r,(char*)&value,sizeof(value));
@@ -131,24 +131,53 @@ unsigned long  rpacket_read_long(rpacket_t r)
 	rpacket_read(r,(char*)&value,sizeof(value));
 	return value;
 }
+*/
+
+uint8_t rpacket_read_uint8(rpacket_t r)
+{
+	uint8_t value = 0;
+	rpacket_read(r,(int8_t*)&value,sizeof(value));
+	return value;
+}
+
+uint16_t rpacket_read_uint16(rpacket_t r)
+{
+	uint16_t value = 0;
+	rpacket_read(r,(int8_t*)&value,sizeof(value));
+	return value;
+}
+
+uint32_t rpacket_read_uint32(rpacket_t r)
+{
+	uint32_t value = 0;
+	rpacket_read(r,(int8_t*)&value,sizeof(value));
+	return value;
+}
+
+uint64_t rpacket_read_uint64(rpacket_t r)
+{
+	uint64_t value = 0;
+	rpacket_read(r,(int8_t*)&value,sizeof(value));
+	return value;
+}
 
 double   rpacket_read_double(rpacket_t r)
 {
 	double value = 0;
-	rpacket_read(r,(char*)&value,sizeof(value));
+	rpacket_read(r,(int8_t*)&value,sizeof(value));
 	return value;
 }
 
 const char* rpacket_read_string(rpacket_t r)
 {
-	unsigned long len = 0;
+	uint32_t len = 0;
 	return (const char *)rpacket_read_binary(r,&len);
 }
 
-const void* rpacket_read_binary(rpacket_t r,unsigned long *len)
+const void* rpacket_read_binary(rpacket_t r,uint32_t *len)
 {
 	void *addr = 0;
-	unsigned long size = rpacket_read_long(r);
+	uint32_t size = rpacket_read_uint32(r);
 	*len = size;
 	if(r->data_remain < size)
 		return addr;
@@ -175,7 +204,7 @@ const void* rpacket_read_binary(rpacket_t r,unsigned long *len)
 		addr = r->binbuf->buf + r->binbufpos;
 		while(size)
 		{
-			unsigned long copy_size = r->readbuf->size - r->rpos;
+			uint32_t copy_size = r->readbuf->size - r->rpos;
 			copy_size = copy_size >= size ? size:copy_size;
 			memcpy(r->binbuf->buf + r->binbufpos,r->readbuf->buf + r->rpos,copy_size);
 			size -= copy_size;

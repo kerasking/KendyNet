@@ -4,16 +4,17 @@
 #include <Winerror.h>
 #include "KendyNet.h"
 #include "Connection.h"
+#include "stdint.h"
 
-
-DWORD packet_recv = 0;
-DWORD packet_send = 0;
-DWORD send_request = 0;
-DWORD tick = 0;
-DWORD now = 0;
-unsigned long bf_count = 0;
-int clientcount = 0;
-DWORD last_send_tick = 0;
+uint32_t packet_recv = 0;
+uint32_t packet_send = 0;
+uint32_t send_request = 0;
+uint32_t tick = 0;
+uint32_t now = 0;
+uint32_t s_p = 0;
+uint32_t bf_count = 0;
+uint32_t clientcount = 0;
+uint32_t last_send_tick = 0;
 
 #define MAX_CLIENT 1000
 static struct connection *clients[MAX_CLIENT];
@@ -27,7 +28,7 @@ void init_clients()
 
 void add_client(struct connection *c)
 {
-	int i = 0;
+	uint32_t i = 0;
 	for(; i < MAX_CLIENT; ++i)
 	{
 		if(clients[i] == 0)
@@ -40,7 +41,7 @@ void add_client(struct connection *c)
 
 void send2_all_client(rpacket_t r)
 {
-	int i = 0;
+	uint32_t i = 0;
 	wpacket_t w;
 	for(; i < MAX_CLIENT; ++i)
 	{
@@ -56,7 +57,7 @@ void send2_all_client(rpacket_t r)
 
 void remove_client(struct connection *c)
 {
-	int i = 0;
+	uint32_t i = 0;
 	for(; i < MAX_CLIENT; ++i)
 	{
 		if(clients[i] == c)
@@ -69,7 +70,7 @@ void remove_client(struct connection *c)
 
 void on_process_packet(struct connection *c,rpacket_t r)
 {
-	int i = 0;
+	uint32_t i = 0;
 	send2_all_client(r);
 	rpacket_destroy(&r);
 	++packet_recv;	
@@ -95,13 +96,14 @@ DWORD WINAPI Listen(void *arg)
 		acceptor_run(a,100);
 	return 0;
 }
-
-int main()
+unsigned long iocp_count = 0; 
+int32_t main()
 {
 	DWORD dwThread;
 	HANDLE iocp;
-	unsigned long n;
-	int i = 0;
+	uint32_t n;
+
+	uint32_t i = 0;
 	//getchar();
 	init_wpacket_pool(10000000);
 	init_rpacket_pool(500000);
@@ -115,17 +117,19 @@ int main()
 	tick = GetTickCount();
 	while(1)
 	{
-		RunEngine(iocp,10);
+		RunEngine(iocp,15);
 		now = GetTickCount();
 		if(now - tick > 1000)
 		{
-			printf("packet_recv:%u,packet_send:%u,send_request:%u,wpacket_pool_size:%u,bf_count:%u\n",packet_recv,packet_send,send_request,wpacket_pool_size(),bf_count);
+			printf("recv:%u,send:%u,s_req:%u,pool_size:%u,bf:%u,sp:%u,iocp:%u\n",packet_recv,packet_send,send_request,wpacket_pool_size(),bf_count,s_p,iocp_count);
 			tick = now;
 			packet_recv = 0;
 			packet_send = 0;
 			send_request = 0;
+			s_p = 0;
+			iocp_count = 0;
 		}
-		if(now - last_send_tick > 25)
+		if(now - last_send_tick > 50)
 		{
 			//心跳,每50ms集中发一次包
 			last_send_tick = now;
@@ -138,9 +142,6 @@ int main()
 				}
 			}
 		}
-		
-		
-		
 	}
 	return 0;
 }

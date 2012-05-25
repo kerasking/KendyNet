@@ -21,24 +21,25 @@
 */
 
 #include "link_list.h"
+#include "stdint.h"
 typedef struct buffer
 {
 	list_node lnode;
-	long ref_count;
-	unsigned long capacity;
-	unsigned long size;
+	int8_t ref_count;
+	uint32_t capacity;
+	uint32_t size;
 	struct buffer *next;
-	char   buf[0];
+	int8_t   buf[0];
 }*buffer_t;
 
 
-buffer_t buffer_create_and_acquire(buffer_t,unsigned long);
+buffer_t buffer_create_and_acquire(buffer_t,uint32_t);
 buffer_t buffer_acquire(buffer_t,buffer_t);
 void     buffer_release(buffer_t*);
-int      buffer_read(buffer_t,unsigned long,char*,unsigned long);
+int32_t      buffer_read(buffer_t,uint32_t,int8_t*,uint32_t);
 
-void     buffer_init_maxbuffer_size(unsigned long);
-void     buffer_init_64(unsigned long);
+void     buffer_init_maxbuffer_size(uint32_t);
+void     buffer_init_64(uint32_t);
 
 
 

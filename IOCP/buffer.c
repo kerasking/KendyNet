@@ -3,15 +3,15 @@
 #include <string.h>
 #include "buffer.h"
 
-extern unsigned long bf_count;
+extern uint32_t bf_count;
 
 static struct link_list *g_buffer_max;
 static struct link_list *g_buffer_64;
 
-void     buffer_init_maxbuffer_size(unsigned long pool_size)
+void     buffer_init_maxbuffer_size(uint32_t pool_size)
 {
-	unsigned long i = 0;
-	unsigned long size = sizeof(struct buffer) + 16384;
+	uint32_t i = 0;
+	uint32_t size = sizeof(struct buffer) + 16384;
 	buffer_t b;
 	g_buffer_max = LIST_CREATE();
 	for( ; i < pool_size; ++i)
@@ -21,10 +21,10 @@ void     buffer_init_maxbuffer_size(unsigned long pool_size)
 	}
 }
 
-void     buffer_init_64(unsigned long pool_size)
+void     buffer_init_64(uint32_t pool_size)
 {
-	unsigned long i = 0;
-	unsigned long size = sizeof(struct buffer) + 64;
+	uint32_t i = 0;
+	uint32_t size = sizeof(struct buffer) + 64;
 	buffer_t b;
 	g_buffer_64 = LIST_CREATE();
 	for( ; i < pool_size; ++i)
@@ -38,9 +38,9 @@ void     buffer_init_64(unsigned long pool_size)
 
 
 
-static buffer_t buffer_create(unsigned long capacity)
+static buffer_t buffer_create(uint32_t capacity)
 {
-	unsigned long size = sizeof(struct buffer) + capacity;
+	uint32_t size = sizeof(struct buffer) + capacity;
 	//buffer_t b = calloc(1,size);
 	
 	buffer_t b;
@@ -79,7 +79,7 @@ static void     buffer_destroy(buffer_t *b)
 	--bf_count;
 }
 
-buffer_t buffer_create_and_acquire(buffer_t b,unsigned long capacity)
+buffer_t buffer_create_and_acquire(buffer_t b,uint32_t capacity)
 {
 	buffer_t nb = buffer_create(capacity);
 	return buffer_acquire(b,nb);
@@ -107,9 +107,9 @@ void buffer_release(buffer_t *b)
 	}
 }
 
-int buffer_read(buffer_t b,unsigned long pos,char *out,unsigned long size)
+int buffer_read(buffer_t b,uint32_t pos,int8_t *out,uint32_t size)
 {
-	unsigned long copy_size;
+	uint32_t copy_size;
 	while(size)
 	{
 		if(!b)

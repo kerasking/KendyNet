@@ -12,12 +12,12 @@ struct acceptor
 	void *ud;
 };
 
-acceptor_t create_acceptor(const char *ip,unsigned long port,on_accept accept_callback,void *ud)
+acceptor_t create_acceptor(const char *ip,uint32_t port,on_accept accept_callback,void *ud)
 {
 	SOCKET ListenSocket;
 	struct sockaddr_in    addr;
 	BOOL                         optval=1;                        //Socket属性值
-	unsigned long               ul=1;
+	uint32_t               ul=1;
 	acceptor_t a;
 	ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -42,7 +42,7 @@ acceptor_t create_acceptor(const char *ip,unsigned long port,on_accept accept_ca
 		closesocket(ListenSocket);
 		return NULL;
 	}
-	ioctlsocket(ListenSocket,FIONBIO,(unsigned long*)&ul);
+	ioctlsocket(ListenSocket,FIONBIO,(uint32_t*)&ul);
 	//setsockopt(ListenSocket,IPPROTO_TCP,TCP_NODELAY,(char*)&optval,sizeof(optval));         //不采用延时算法 
 
 	a = malloc(sizeof(*a));
@@ -61,7 +61,7 @@ void destroy_acceptor(acceptor_t *a)
 	*a = NULL;
 }
 
-void acceptor_run(acceptor_t a,int ms)
+void acceptor_run(acceptor_t a,int32_t ms)
 {
 	struct timeval timeout;
 	SOCKET client;

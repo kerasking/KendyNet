@@ -16,14 +16,14 @@
 */	
 #ifndef _CONNECTOR_H
 #define _CONNECTOR_H
-
+#include "stdint.h"
 
 typedef struct connector *connector_t;
-typedef void (*on_connect)(SOCKET,const char *ip,unsigned long port,void*ud);
+typedef void (*on_connect)(SOCKET,const char *ip,uint32_t port,void*ud);
 
 connector_t connector_create();
 void        connector_destroy(connector_t*);
-int         connector_connect(connector_t,const char *ip,unsigned long port,on_connect,void *ud,unsigned long ms);
-void        connector_run(connector_t,unsigned long ms);
+int         connector_connect(connector_t,const char *ip,uint32_t port,on_connect,void *ud,uint32_t ms);
+void        connector_run(connector_t,uint32_t ms);
 
 #endif

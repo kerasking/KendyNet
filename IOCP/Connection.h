@@ -3,10 +3,11 @@
 #include "KendyNet.h"
 #include "wpacket.h"
 #include "rpacket.h"
+#include "stdint.h"
 struct OVERLAPCONTEXT
 {
 	struct OverLapContext m_super;
-	char   isUsed;
+	int8_t   isUsed;
 };
 
 typedef void (*process_packet)(struct connection*,rpacket_t);
@@ -22,10 +23,10 @@ struct connection
 	struct OVERLAPCONTEXT send_overlap;
 	struct OVERLAPCONTEXT recv_overlap;
 
-	unsigned long unpack_size; //还未解包的数据大小
+	uint32_t unpack_size; //还未解包的数据大小
 
-	unsigned long unpack_pos;
-	unsigned long next_recv_pos;
+	uint32_t unpack_pos;
+	uint32_t next_recv_pos;
 
 	buffer_t next_recv_buf;
 	buffer_t unpack_buf; 
@@ -42,8 +43,8 @@ void connection_destroy(struct connection**);
 void connection_push_packet(struct connection*,wpacket_t);
 
 //返回值:0,连接断开;否则正常
-int connection_send(struct connection*,wpacket_t,int);
+int32_t connection_send(struct connection*,wpacket_t,int32_t);
 
-int connection_recv(struct connection*);
+int32_t connection_recv(struct connection*);
 
 #endif

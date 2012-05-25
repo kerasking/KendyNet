@@ -8,13 +8,13 @@
 #define BUFFER_SIZE 16384
 
 //接收相关函数
-static void update_next_recv_pos(struct connection *c,long bytestransfer)
+static void update_next_recv_pos(struct connection *c,int32_t bytestransfer)
 {
-	unsigned long size;		
+	uint32_t size;		
 	while(bytestransfer)
 	{
 		size = c->next_recv_buf->capacity - c->next_recv_pos;
-		size = size > (unsigned long)bytestransfer ? (unsigned long)bytestransfer:size;
+		size = size > (uint32_t)bytestransfer ? (uint32_t)bytestransfer:size;
 		c->next_recv_buf->size += size;
 		c->next_recv_pos += size;
 		bytestransfer -= size;
@@ -31,14 +31,14 @@ static void update_next_recv_pos(struct connection *c,long bytestransfer)
 //解包
 static /*rpacket_t*/void unpack(struct connection *c)
 {
-	unsigned long pk_len = 0;
-	unsigned long pk_total_size;
+	uint32_t pk_len = 0;
+	uint32_t pk_total_size;
 	rpacket_t r;
 	for(;;)
 	{
-		if(c->unpack_size <= sizeof(unsigned long))
+		if(c->unpack_size <= sizeof(uint32_t))
 			break;//return 0;
-		buffer_read(c->unpack_buf,c->unpack_pos,(char*)&pk_len,sizeof(pk_len));
+		buffer_read(c->unpack_buf,c->unpack_pos,(int8_t*)&pk_len,sizeof(pk_len));
 		pk_total_size = pk_len+sizeof(pk_len);
 		if(pk_total_size > c->unpack_size)
 			break;//return 0;
@@ -47,7 +47,7 @@ static /*rpacket_t*/void unpack(struct connection *c)
 		//调整unpack_buf和unpack_pos
 		while(pk_total_size)
 		{
-			unsigned long size = c->unpack_buf->size - c->unpack_pos;
+			uint32_t size = c->unpack_buf->size - c->unpack_pos;
 			size = pk_total_size > size ? size:pk_total_size;
 			c->unpack_pos  += size;
 			pk_total_size  -= size;
@@ -69,16 +69,15 @@ static /*rpacket_t*/void unpack(struct connection *c)
 }
 
 
-void RecvFinish(struct Socket *s,struct OverLapContext *o,long bytestransfer,DWORD err_code)
+void RecvFinish(struct Socket *s,struct OverLapContext *o,int32_t bytestransfer,uint32_t err_code)
 {
 	struct OVERLAPCONTEXT *OVERLAP = (struct OVERLAPCONTEXT *)o;
 	struct connection *c = (struct connection *)s;
-	rpacket_t r;
-	unsigned long recv_size;
-	unsigned long free_buffer_size;
+	uint32_t recv_size;
+	uint32_t free_buffer_size;
 	buffer_t buf;
-	unsigned long pos;
-	int i = 0;
+	uint32_t pos;
+	int32_t i = 0;
 	for(;;)
 	{
 		if(bytestransfer == 0 || bytestransfer < 0 && err_code != WSA_IO_PENDING)
@@ -140,13 +139,13 @@ void RecvFinish(struct Socket *s,struct OverLapContext *o,long bytestransfer,DWO
 //发送相关函数
 static  struct OverLapContext *prepare_send(struct connection *c)
 {
-	int i = 0;
+	int32_t i = 0;
 	wpacket_t w = (wpacket_t)list_head(c->send_list);
 	buffer_t b;
-	unsigned long pos;
+	uint32_t pos;
 	struct OverLapContext *O = 0;
-	unsigned long buffer_size = 0;
-	unsigned long size = 0;
+	uint32_t buffer_size = 0;
+	uint32_t size = 0;
 	while(w && i < MAX_WBAF)
 	{
 		pos = w->begin_pos;
@@ -175,15 +174,15 @@ static  struct OverLapContext *prepare_send(struct connection *c)
 
 }
 extern DWORD packet_send;
-static void update_send_list(struct connection *c,int bytestransfer)
+static void update_send_list(struct connection *c,int32_t bytestransfer)
 {
 	wpacket_t w;
-	unsigned long size;
+	uint32_t size;
 	while(bytestransfer)
 	{
 		w = LIST_POP(wpacket_t,c->send_list);
 		assert(w);
-		if((unsigned long)bytestransfer >= w->data_size)
+		if((uint32_t)bytestransfer >= w->data_size)
 		{
 			//一个包发完
 			bytestransfer -= w->data_size;
@@ -195,7 +194,7 @@ static void update_send_list(struct connection *c,int bytestransfer)
 			while(bytestransfer)
 			{
 				size = w->buf->size - w->begin_pos;
-				size = size > (unsigned long)bytestransfer ? (unsigned long)bytestransfer:size;
+				size = size > (uint32_t)bytestransfer ? (uint32_t)bytestransfer:size;
 				bytestransfer -= size;
 				w->begin_pos += size;
 				w->data_size -= size;
@@ -210,12 +209,13 @@ static void update_send_list(struct connection *c,int bytestransfer)
 	}
 }
 
-int connection_send(struct connection *c,wpacket_t w,int send)
+extern uint32_t s_p;
+int32_t connection_send(struct connection *c,wpacket_t w,int32_t send)
 {
-	int bytestransfer = 0;
-	DWORD err_code = 0;
+	int32_t bytestransfer = 0;
+	uint32_t err_code = 0;
 	struct OverLapContext *O;
-	int ret = 1;
+	int32_t ret = 1;
 	if(w)
 		LIST_PUSH_BACK(c->send_list,w);
 	if(!c->send_overlap.isUsed)
@@ -234,7 +234,10 @@ int connection_send(struct connection *c,wpacket_t w,int send)
 				update_send_list(c,bytestransfer);
 			}
 			else 
+			{
+				++s_p;
 				return 1;
+			}
 		}
 		c->send_overlap.isUsed = 0;
 	}
@@ -250,7 +253,7 @@ void connection_push_packet(struct connection *c,wpacket_t w)
 	}
 }
 
-void SendFinish(struct Socket *s,struct OverLapContext *o,long bytestransfer,DWORD err_code)
+void SendFinish(struct Socket *s,struct OverLapContext *o,int32_t bytestransfer,uint32_t err_code)
 {
 	struct OVERLAPCONTEXT *OVERLAP = (struct OVERLAPCONTEXT *)o;
 	struct connection *c = (struct connection *)s;

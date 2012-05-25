@@ -19,14 +19,15 @@
 
 #include "buffer.h"
 #include "link_list.h"
+#include "stdint.h"
 typedef struct rpacket
 {
 	list_node next;
-	unsigned long len;     //包长(去除包长度字段)
-	unsigned long rpos;    //读下标
-	unsigned long data_remain;
-	unsigned long binbufpos;
-	unsigned long begin_pos;
+	uint32_t len;     //包长(去除包长度字段)
+	uint32_t rpos;    //读下标
+	uint32_t data_remain;
+	uint32_t binbufpos;
+	uint32_t begin_pos;
 	buffer_t binbuf;       //用于存放跨越buffer_t边界数据的buffer_t
 	buffer_t buf;          //存放此数据包内容的buffer_t链表
 	buffer_t readbuf;      //当前rpos所在的buffer_t
@@ -34,19 +35,21 @@ typedef struct rpacket
 
 struct wpacket;
 
-rpacket_t rpacket_create(buffer_t,unsigned long pos,unsigned long pk_len);
+rpacket_t rpacket_create(buffer_t,uint32_t pos,uint32_t pk_len);
 rpacket_t rpacket_create_by_wpacket(struct wpacket*);//通过wpacket构造
 void      rpacket_destroy(rpacket_t*);
 
 //数据读取接口
-unsigned long  rpacket_len(rpacket_t);
-unsigned long  rpacket_data_remain(rpacket_t);
-unsigned char  rpacket_read_char(rpacket_t);
-unsigned short rpacket_read_short(rpacket_t);
-unsigned long  rpacket_read_long(rpacket_t);
+uint32_t  rpacket_len(rpacket_t);
+uint32_t  rpacket_data_remain(rpacket_t);
+uint8_t rpacket_read_uint8(rpacket_t);
+uint16_t rpacket_read_uint16(rpacket_t);
+uint32_t rpacket_read_uint32(rpacket_t);
+uint64_t rpacket_read_uint64(rpacket_t);
+
 double         rpacket_read_double(rpacket_t);
 const char*    rpacket_read_string(rpacket_t);
-const void*    rpacket_read_binary(rpacket_t,unsigned long *len);
-void init_rpacket_pool(unsigned long pool_size);
+const void*    rpacket_read_binary(rpacket_t,uint32_t *len);
+void init_rpacket_pool(uint32_t pool_size);
 
 #endif

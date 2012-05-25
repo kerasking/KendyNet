@@ -18,6 +18,7 @@
 #define _KENDYNET_H
 #include "Connector.h"
 #include "Acceptor.h"
+#include "stdint.h"
 
 enum
 {
@@ -31,7 +32,7 @@ struct OverLapContext
 	OVERLAPPED    m_overLapped;
 	WSABUF*       wbuf;
 	DWORD         buf_count;
-	unsigned char m_Type;
+	uint8_t       m_Type;
 };
 struct Socket;
 
@@ -40,21 +41,21 @@ typedef struct Socket
 {
 	SOCKET sock;
 	HANDLE complete_port;
-	void (*RecvFinish)(struct Socket*,struct OverLapContext*,long,DWORD);
-	void (*SendFinish)(struct Socket*,struct OverLapContext*,long,DWORD);
+	void (*RecvFinish)(struct Socket*,struct OverLapContext*,int32_t,uint32_t);
+	void (*SendFinish)(struct Socket*,struct OverLapContext*,int32_t,uint32_t);
 }*Socket_t;
 
-int    InitNetSystem();
+int32_t    InitNetSystem();
 void   CleanNetSystem();
 
 HANDLE CreateNetEngine(DWORD NumberOfConcurrentThreads);
 void   CloseNetEngine(HANDLE);
-int    RunEngine(HANDLE,DWORD timeout);
-int    Bind2Engine(HANDLE,Socket_t);
+int32_t    RunEngine(HANDLE,DWORD timeout);
+int32_t    Bind2Engine(HANDLE,Socket_t);
 
 //now表示是否立即发起操作
-int    WSA_Send(Socket_t,struct OverLapContext*,int now,DWORD *err_code);
-int    WSA_Recv(Socket_t,struct OverLapContext*,int now,DWORD *err_code);
+int32_t    WSA_Send(Socket_t,struct OverLapContext*,int32_t now,uint32_t *err_code);
+int32_t    WSA_Recv(Socket_t,struct OverLapContext*,int32_t now,uint32_t *err_code);
 
 
 

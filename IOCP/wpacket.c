@@ -7,14 +7,14 @@
 
 static struct link_list *g_wpacket_pool;
 
-static int is_pow_of_2(unsigned long size)
+static int32_t is_pow_of_2(uint32_t size)
 {
 	return !(size&(size-1));
 }
 
-static unsigned char GetK(unsigned long size)
+static uint8_t GetK(uint32_t size)
 {
-	unsigned char k = 0;
+	uint8_t k = 0;
 	if(!is_pow_of_2(size))
 	{
 		size = (size << 1);
@@ -29,9 +29,9 @@ static unsigned char GetK(unsigned long size)
 }
 
 
-void init_wpacket_pool(unsigned long pool_size)
+void init_wpacket_pool(uint32_t pool_size)
 {
-	unsigned long i = 0;
+	uint32_t i = 0;
 	wpacket_t w;// = calloc(1,sizeof(*w));
 	g_wpacket_pool = LIST_CREATE();
 	for( ; i < pool_size; ++i)
@@ -41,25 +41,15 @@ void init_wpacket_pool(unsigned long pool_size)
 	}
 }
 
-unsigned long wpacket_pool_size()
+uint32_t wpacket_pool_size()
 {
 	return list_size(g_wpacket_pool);
 }
 
-//static wpacket_t wpacket_get()
-//{
-//	wpacket_t w = LIST_POP(wpacket_t,g_wpacket_pool);
-//	return w;
-//}
 
-//static void wpacket_put(wpacket_t w)
-//{
-//	LIST_PUSH_BACK(g_wpacket_pool,w);
-//}
-
-wpacket_t wpacket_create(unsigned long size)
+wpacket_t wpacket_create(uint32_t size)
 {
-	unsigned char k = GetK(size);
+	uint8_t k = GetK(size);
 	wpacket_t w;
 	size = 1 << k;
 	w = LIST_POP(wpacket_t,g_wpacket_pool);//calloc(1,sizeof(*w));
@@ -75,7 +65,7 @@ wpacket_t wpacket_create(unsigned long size)
 	w->wpos = sizeof(w->len);
 	w->buf = buffer_create_and_acquire(0,size);
 	w->writebuf = buffer_acquire(0,w->buf);
-	w->len = (unsigned long*)w->buf->buf;
+	w->len = (uint32_t*)w->buf->buf;
 	*(w->len) = 0;
 	w->buf->size = sizeof(w->len);
 	w->begin_pos = 0;
@@ -121,7 +111,7 @@ void wpacket_destroy(wpacket_t *w)
 
 static void wpacket_expand(wpacket_t w)
 {
-	unsigned long size;
+	uint32_t size;
 	w->factor <<= 1;
 	size = 1 << w->factor;
 	w->writebuf->next = buffer_create_and_acquire(0,size);
@@ -132,9 +122,9 @@ static void wpacket_expand(wpacket_t w)
 
 static void wpacket_copy(wpacket_t w,buffer_t buf)
 {
-	char *ptr = buf->buf;
+	int8_t *ptr = buf->buf;
 	buffer_t tmp_buf = w->buf;
-	unsigned long copy_size;
+	uint32_t copy_size;
 	while(tmp_buf)
 	{
 		copy_size = tmp_buf->size - w->wpos;
@@ -145,12 +135,12 @@ static void wpacket_copy(wpacket_t w,buffer_t buf)
 	}
 }
 
-static void wpacket_write(wpacket_t w,char *addr,unsigned long size)
+static void wpacket_write(wpacket_t w,int8_t *addr,uint32_t size)
 {
-	char *ptr = addr;
-	unsigned long copy_size;
+	int8_t *ptr = addr;
+	uint32_t copy_size;
 	buffer_t tmp;
-	unsigned char k;
+	uint8_t k;
 	if(!w->writebuf)
 	{
 		/*wpacket是由rpacket构造的，这里执行写时拷贝，
@@ -161,7 +151,7 @@ static void wpacket_write(wpacket_t w,char *addr,unsigned long size)
 		tmp = buffer_create_and_acquire(0,1 << k);
 		wpacket_copy(w,tmp);
 		w->begin_pos = 0;
-		w->len = (unsigned long*)tmp->buf;
+		w->len = (uint32_t*)tmp->buf;
 		w->wpos = sizeof(*w->len);
 		w->buf = buffer_acquire(w->buf,tmp);
 		w->writebuf = buffer_acquire(w->writebuf,w->buf);
@@ -186,31 +176,36 @@ static void wpacket_write(wpacket_t w,char *addr,unsigned long size)
 }
 
 
-void wpacket_write_char(wpacket_t w,unsigned char value)
+void wpacket_write_uint8(wpacket_t w,uint8_t value)
 {
-	wpacket_write(w,(char*)&value,sizeof(value));
+	wpacket_write(w,(uint8_t*)&value,sizeof(value));
 }
 
-void wpacket_write_short(wpacket_t w,unsigned short value)
+void wpacket_write_uint16(wpacket_t w,uint16_t value)
 {
-	wpacket_write(w,(char*)&value,sizeof(value));
+	wpacket_write(w,(uint8_t*)&value,sizeof(value));
 }
 
-void wpacket_write_long(wpacket_t w,unsigned long value)
+void wpacket_write_uint32(wpacket_t w,uint32_t value)
 {
-	wpacket_write(w,(char*)&value,sizeof(value));
+	wpacket_write(w,(uint8_t*)&value,sizeof(value));
+}
+
+void wpacket_write_uint64(wpacket_t w,uint64_t value)
+{
+	wpacket_write(w,(uint8_t*)&value,sizeof(value));
 }
 
 void wpacket_write_double(wpacket_t w ,double value)
 {
-	wpacket_write(w,(char*)&value,sizeof(value));
+	wpacket_write(w,(uint8_t*)&value,sizeof(value));
 }
 
-static void wpacket_rewrite(write_pos *wp,char *addr,unsigned long size)
+static void wpacket_rewrite(write_pos *wp,int8_t *addr,uint32_t size)
 {
-	char *ptr = addr;
-	unsigned long copy_size;
-	unsigned long pos = wp->wpos;
+	int8_t *ptr = addr;
+	uint32_t copy_size;
+	uint32_t pos = wp->wpos;
 	while(size)
 	{
 		copy_size = wp->buf->capacity - pos;
@@ -229,24 +224,29 @@ static void wpacket_rewrite(write_pos *wp,char *addr,unsigned long size)
 	}
 }
 
-void wpacket_rewrite_char(write_pos *wp,unsigned char value)
+void wpacket_rewrite_uint8(write_pos *wp,uint8_t value)
 {
-	wpacket_rewrite(wp,&value,sizeof(value));
+	wpacket_rewrite(wp,(uint8_t*)&value,sizeof(value));
 }
 
-void wpacket_rewrite_short(write_pos *wp,unsigned short value)
+void wpacket_rewrite_uint16(write_pos *wp,uint16_t value)
 {
-	wpacket_rewrite(wp,(char*)&value,sizeof(value));
+	wpacket_rewrite(wp,(uint8_t*)&value,sizeof(value));
 }
 
-void wpacket_rewrite_long(write_pos *wp,unsigned long value)
+void wpacket_rewrite_uint32(write_pos *wp,uint32_t value)
 {
-	wpacket_rewrite(wp,(char*)&value,sizeof(value));
+	wpacket_rewrite(wp,(uint8_t*)&value,sizeof(value));
+}
+
+void wpacket_rewrite_uint64(write_pos *wp,uint64_t value)
+{
+	wpacket_rewrite(wp,(uint8_t*)&value,sizeof(value));
 }
 
 void wpacket_rewrite_double(write_pos *wp,double value)
 {
-	wpacket_rewrite(wp,(char*)&value,sizeof(value));
+	wpacket_rewrite(wp,(uint8_t*)&value,sizeof(value));
 }
 
 void wpacket_write_string(wpacket_t w ,const char *value)
@@ -254,10 +254,10 @@ void wpacket_write_string(wpacket_t w ,const char *value)
 	wpacket_write_binary(w,value,strlen(value)+1);
 }
 
-void wpacket_write_binary(wpacket_t w,const void *value,unsigned long size)
+void wpacket_write_binary(wpacket_t w,const void *value,uint32_t size)
 {
 	assert(value);
-	wpacket_write_long(w,size);
-	wpacket_write(w,(char*)value,size);
+	wpacket_write_uint32(w,size);
+	wpacket_write(w,(int8_t*)value,size);
 }
 
