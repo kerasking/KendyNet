@@ -25,7 +25,7 @@
 typedef struct buffer
 {
 	list_node lnode;
-	int8_t ref_count;
+	int32_t ref_count;
 	uint32_t capacity;
 	uint32_t size;
 	struct buffer *next;
