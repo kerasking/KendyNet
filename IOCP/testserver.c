@@ -4,7 +4,7 @@
 #include <Winerror.h>
 #include "KendyNet.h"
 #include "Connection.h"
-#include "stdint.h"
+#include <stdint.h>
 
 uint32_t packet_recv = 0;
 uint32_t packet_send = 0;

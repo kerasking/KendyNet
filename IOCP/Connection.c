@@ -181,7 +181,11 @@ static void update_send_list(struct connection *c,int32_t bytestransfer)
 	while(bytestransfer)
 	{
 		w = LIST_POP(wpacket_t,c->send_list);
-		assert(w);
+		if(!w)
+		{
+			//记录错误
+			break;
+		}
 		if((uint32_t)bytestransfer >= w->data_size)
 		{
 			//一个包发完

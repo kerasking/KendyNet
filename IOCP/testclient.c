@@ -8,7 +8,7 @@
 #include "KendyNet.h"
 #include "Connector.h"
 #include "Connection.h"
-#include "stdint.h"
+#include <stdint.h>
 static uint32_t connect_count = 0;
 uint32_t packet_recv = 0;
 uint32_t packet_send = 0;

@@ -1,6 +1,6 @@
 #ifndef _LINK_LIST_H
 #define _LINK_LIST_H
-#include "stdint.h"
+#include <stdint.h>
 
 typedef struct list_node
 {

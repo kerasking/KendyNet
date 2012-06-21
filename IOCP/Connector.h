@@ -16,7 +16,7 @@
 */	
 #ifndef _CONNECTOR_H
 #define _CONNECTOR_H
-#include "stdint.h"
+#include <stdint.h>
 
 typedef struct connector *connector_t;
 typedef void (*on_connect)(SOCKET,const char *ip,uint32_t port,void*ud);

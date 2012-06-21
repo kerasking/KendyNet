@@ -3,7 +3,7 @@
 #include "KendyNet.h"
 #include "wpacket.h"
 #include "rpacket.h"
-#include "stdint.h"
+#include <stdint.h>
 struct OVERLAPCONTEXT
 {
 	struct OverLapContext m_super;

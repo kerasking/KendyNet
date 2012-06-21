@@ -19,7 +19,7 @@
 
 #include "buffer.h"
 #include "link_list.h"
-#include "stdint.h"
+#include <stdint.h>
 typedef struct rpacket
 {
 	list_node next;

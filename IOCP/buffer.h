@@ -21,7 +21,7 @@
 */
 
 #include "link_list.h"
-#include "stdint.h"
+#include <stdint.h>
 typedef struct buffer
 {
 	list_node lnode;

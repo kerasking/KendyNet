@@ -18,7 +18,7 @@
 #define _WPACKET_H
 #include "buffer.h"
 #include "link_list.h"
-#include "stdint.h"
+#include <stdint.h>
 typedef struct wpacket
 {
 	list_node next;

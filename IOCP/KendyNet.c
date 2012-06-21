@@ -72,7 +72,7 @@ static int32_t raw_Send(Socket_t s,struct OverLapContext *overLapped,uint32_t *e
 		return dwBytes;
 }
 
-static int raw_Recv(Socket_t s,struct OverLapContext *overLapped,uint32_t *err_code)
+static int32_t raw_Recv(Socket_t s,struct OverLapContext *overLapped,uint32_t *err_code)
 {
 	uint32_t dwFlags = 0;
 	uint32_t dwBytes = 0;
@@ -131,6 +131,7 @@ int    RunEngine(HANDLE CompletePort,DWORD timeout)
 		else
 		{
 			//++iocp_count;
+#ifdef _WIN7
 			if(overLapped->m_Type & IO_REQUEST)
 			{
 				overLapped->m_Type = overLapped->m_Type << 1;
@@ -147,7 +148,7 @@ int    RunEngine(HANDLE CompletePort,DWORD timeout)
 				//if(bytesTransfer == 0)
 				//	continue;//WSA_IO_PENDING
 			}
-		
+#endif		
 			if(overLapped->m_Type & IO_RECVFINISH)
 				call_back = socket->RecvFinish;
 			else if(overLapped->m_Type & IO_SENDFINISH)
@@ -177,10 +178,14 @@ int    Bind2Engine(HANDLE CompletePort,Socket_t socket)
 	if (NULL == hTemp)
 		return -1;
 	socket->complete_port = CompletePort;
+#ifdef _WIN7
 	SetFileCompletionNotificationModes((HANDLE)socket->sock,FILE_SKIP_COMPLETION_PORT_ON_SUCCESS);
+#endif
 	return 0;
 }
 
+
+#ifdef _WIN7
 int32_t    WSA_Send(Socket_t socket,struct OverLapContext *OverLap,int32_t now,uint32_t *err_code)
 {
 	if(!socket->complete_port)
@@ -220,3 +225,40 @@ int32_t    WSA_Recv(Socket_t socket,struct OverLapContext *OverLap,int32_t now,u
 		return raw_Recv(socket,OverLap,err_code);
 	}
 }
+#else
+//非VC编译的now参数被忽略
+int32_t    WSA_Send(Socket_t socket,struct OverLapContext *OverLap,int32_t now,uint32_t *err_code)
+{
+	int32_t bytetransfer = 0;
+	if(!socket->complete_port)
+		return UNBIND2ENGINE;
+	ZeroMemory(&OverLap->m_overLapped, sizeof(OVERLAPPED));
+	OverLap->m_Type = IO_SENDFINISH;
+	bytetransfer =  raw_Send(socket,OverLap,err_code);
+	if(bytetransfer > 0)
+	{
+		bytetransfer = -1;
+		*err_code = WSA_IO_PENDING;
+	}
+	return bytetransfer;
+}
+
+int32_t    WSA_Recv(Socket_t socket,struct OverLapContext *OverLap,int32_t now,uint32_t *err_code)
+{
+	int32_t bytetransfer = 0;
+	if(!socket->complete_port)
+		return UNBIND2ENGINE;
+	ZeroMemory(&OverLap->m_overLapped, sizeof(OVERLAPPED));
+
+	OverLap->m_Type = IO_RECVFINISH;
+	bytetransfer = raw_Recv(socket,OverLap,err_code);
+	if(bytetransfer > 0)
+	{
+		bytetransfer = -1;
+		*err_code = WSA_IO_PENDING;
+	}
+	return bytetransfer;
+}
+
+
+#endif

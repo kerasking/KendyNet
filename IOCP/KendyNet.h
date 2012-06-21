@@ -18,7 +18,7 @@
 #define _KENDYNET_H
 #include "Connector.h"
 #include "Acceptor.h"
-#include "stdint.h"
+#include <stdint.h>
 
 enum
 {
