@@ -120,13 +120,20 @@ int    RunEngine(HANDLE CompletePort,DWORD timeout)
 		if(0 == bytesTransfer)
 		{
 			//连接中断或错误
-			lastErrno = WSAGetLastError();
-			if(overLapped->m_Type & IO_RECV)
-				call_back = socket->RecvFinish;	
+			lastErrno = WSAGetLastError();			
+			if(bReturn == TRUE && lastErrno == 0)
+			{
+			}
 			else
-				call_back = socket->SendFinish;
-			if(FALSE == bReturn)
-				bytesTransfer = -1;
+			{
+				if(overLapped->m_Type & IO_RECV)
+					call_back = socket->RecvFinish;	
+				else
+					call_back = socket->SendFinish;
+				if(FALSE == bReturn)
+					bytesTransfer = -1;
+			}
+
 		}
 		else
 		{
