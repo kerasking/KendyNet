@@ -36,22 +36,44 @@ static /*rpacket_t*/void unpack(struct connection *c)
 	rpacket_t r;
 	for(;;)
 	{
-		if(c->unpack_size <= sizeof(uint32_t))
-			break;//return 0;
-		buffer_read(c->unpack_buf,c->unpack_pos,(int8_t*)&pk_len,sizeof(pk_len));
-		pk_total_size = pk_len+sizeof(pk_len);
-		if(pk_total_size > c->unpack_size)
-			break;//return 0;
-		r = rpacket_create(c->unpack_buf,c->unpack_pos,pk_len);
-		
-		//调整unpack_buf和unpack_pos
-		while(pk_total_size)
+
+		if(!c->raw)
+		{		
+			if(c->unpack_size <= sizeof(uint32_t))
+				break;//return 0;
+			buffer_read(c->unpack_buf,c->unpack_pos,(int8_t*)&pk_len,sizeof(pk_len));
+			pk_total_size = pk_len+sizeof(pk_len);
+			if(pk_total_size > c->unpack_size)
+				break;//return 0;
+			r = rpacket_create(c->unpack_buf,c->unpack_pos,pk_len,c->raw);
+			//调整unpack_buf和unpack_pos
+			while(pk_total_size)
+			{
+				uint32_t size = c->unpack_buf->size - c->unpack_pos;
+				size = pk_total_size > size ? size:pk_total_size;
+				c->unpack_pos  += size;
+				pk_total_size  -= size;
+				c->unpack_size -= size;
+				if(c->unpack_pos >= c->unpack_buf->capacity)
+				{
+					/* unpack之前先执行了update_next_recv_pos,在update_next_recv_pos中
+					*  如果buffer被填满，会扩展一块新的buffer加入链表中，所以这里的
+					*  c->unpack_buf->next不应该会是NULL
+					*/
+					assert(c->unpack_buf->next);
+					c->unpack_pos = 0;
+					c->unpack_buf = buffer_acquire(c->unpack_buf,c->unpack_buf->next);
+				}
+			}
+		}
+		else
 		{
-			uint32_t size = c->unpack_buf->size - c->unpack_pos;
-			size = pk_total_size > size ? size:pk_total_size;
-			c->unpack_pos  += size;
-			pk_total_size  -= size;
-			c->unpack_size -= size;
+			pk_len = c->unpack_buf->size - c->unpack_pos;
+			if(!pk_len)
+				return; 
+			r = rpacket_create(c->unpack_buf,c->unpack_pos,pk_len,c->raw);
+			c->unpack_pos  += pk_len;
+			c->unpack_size -= pk_len;
 			if(c->unpack_pos >= c->unpack_buf->capacity)
 			{
 				/* unpack之前先执行了update_next_recv_pos,在update_next_recv_pos中
@@ -85,7 +107,7 @@ void RecvFinish(struct Socket *s,struct OverLapContext *o,int32_t bytestransfer,
 			c->recv_overlap.isUsed = 0;
 			if(!c->send_overlap.isUsed)
 			{
-				printf("断开\n");
+				printf("断开:%d\n",err_code);
 				closesocket(c->socket.sock);
 				connection_destroy(&c);
 			}
@@ -268,7 +290,7 @@ void SendFinish(struct Socket *s,struct OverLapContext *o,int32_t bytestransfer,
 			c->send_overlap.isUsed = 0;
 			if(!c->recv_overlap.isUsed)
 			{
-				printf("断开\n");
+				printf("断开:%d\n",err_code);
 				closesocket(c->socket.sock);
 				connection_destroy(&c);
 			}
@@ -296,7 +318,7 @@ void SendFinish(struct Socket *s,struct OverLapContext *o,int32_t bytestransfer,
 	}
 }
 
-struct connection *connection_create(SOCKET s,process_packet _process_packet,on_connection_destroy on_destroy)
+struct connection *connection_create(SOCKET s,uint8_t is_raw,process_packet _process_packet,on_connection_destroy on_destroy)
 {
 	struct connection *c = calloc(1,sizeof(*c));
 	c->socket.sock = s;
@@ -310,6 +332,7 @@ struct connection *connection_create(SOCKET s,process_packet _process_packet,on_
 	c->unpack_buf = 0;
 	c->unpack_pos = 0;
 	c->unpack_size = 0;
+	c->raw = is_raw;
 	return c;
 }
 

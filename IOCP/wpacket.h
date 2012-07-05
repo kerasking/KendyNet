@@ -29,6 +29,7 @@ typedef struct wpacket
 	uint8_t factor;
 	uint32_t begin_pos; //属于本包的数据在首buf中的起始位置
 	uint32_t data_size;//实际数据大小,包含包长度
+	uint8_t  raw;
 }*wpacket_t;
 struct rpacket;
 
@@ -39,7 +40,7 @@ typedef struct
 	uint32_t wpos;
 }write_pos;
 
-wpacket_t wpacket_create(uint32_t size);
+wpacket_t wpacket_create(uint32_t size,uint8_t is_raw);
 wpacket_t wpacket_create_by_rpacket(struct rpacket*);//通过rpacket构造
 void wpacket_destroy(wpacket_t*);
 
